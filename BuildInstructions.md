@@ -12,10 +12,11 @@ dotnet build TimeCheck.csproj
 
 To run the project, use one of these commands depending on your target platform:
 
-### Android
+### Androidw'hhtime'
 ```bash
 dotnet run -f net9.0-android
 dotnet build -f:net9.0-android -c:Debug /t:Install
+dotnet build -f net9.0-android && dotnet build -t:Run -f net9.0-android
 ```
 
 ### Windows
