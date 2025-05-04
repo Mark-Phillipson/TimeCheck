@@ -1,31 +1,39 @@
-    // Services/SpeechService.cs
+// Services/SpeechService.cs
 using Microsoft.CognitiveServices.Speech;
 using System;
 using System.Threading.Tasks;
 #if ANDROID
 using Android.Runtime;
+using Android.Speech;
+using Android.OS;
+using Android.Content;
 using Microsoft.Maui.ApplicationModel;
+#endif
+#if WINDOWS
+using Microsoft.UI.Xaml.Controls;
 #endif
 
 namespace TimeCheck.Services
 {
     public class SpeechService
     {
-        private SpeechRecognizer? _recognizer;
-        private SpeechConfig? _config;
 #if ANDROID
+        private Android.Speech.SpeechRecognizer? _recognizer;
         private Android.Speech.Tts.TextToSpeech? _tts;
+#elif WINDOWS
+        private Windows.Media.SpeechRecognition.SpeechRecognizer? _recognizer;
+        private Windows.Media.SpeechSynthesis.SpeechSynthesizer? _synthesizer;
 #endif
         private bool _isInitialized;
-        private readonly string _apiKey;
 
         public event Action<string>? OnRecognized;
 
-        public SpeechService(string apiKey)
+        public SpeechService()
         {
-            _apiKey = apiKey;
 #if ANDROID
             _tts = new Android.Speech.Tts.TextToSpeech(Platform.CurrentActivity, new TTSListener());
+#elif WINDOWS
+            _synthesizer = new Windows.Media.SpeechSynthesis.SpeechSynthesizer();
 #endif
         }
 
@@ -40,18 +48,48 @@ namespace TimeCheck.Services
                     System.Console.WriteLine("Microphone permission not granted");
                     return;
                 }
-#endif
-                if (string.IsNullOrEmpty(_apiKey))
+
+                _recognizer = Android.Speech.SpeechRecognizer.CreateSpeechRecognizer(Platform.CurrentActivity);
+                if (_recognizer == null)
                 {
-                    System.Console.WriteLine("Azure Speech API key not provided");
+                    System.Console.WriteLine("Could not create speech recognizer");
                     return;
                 }
 
-                _config = SpeechConfig.FromSubscription(_apiKey, "uksouth");
-                _recognizer = new SpeechRecognizer(_config);
-                _recognizer.Recognized += Recognizer_Recognized;
-                Console.WriteLine("Speech recognizer initialized successfully");
+                _recognizer.SetRecognitionListener(new SpeechRecognitionListener
+                {
+                    OnRecognizedAction = (text) => 
+                    {
+                        if (text?.Contains("time", StringComparison.OrdinalIgnoreCase) == true)
+                        {
+                            SpeakCurrentTime();
+                        }
+                        if (text != null)
+                        {
+                            OnRecognized?.Invoke(text);
+                        }
+                    }
+                });
+#elif WINDOWS
+                var microphonePermission = await Windows.Security.Authorization.AppCapabilityAccess.AppCapability.Create("microphone").RequestAccessAsync();
+                if (microphonePermission != Windows.Security.Authorization.AppCapabilityAccess.AppCapabilityAccessStatus.Allowed)
+                {
+                    System.Console.WriteLine("Microphone permission not granted");
+                    return;
+                }
+
+                _recognizer = new Windows.Media.SpeechRecognition.SpeechRecognizer();
+                _recognizer.ContinuousRecognitionSession.ResultGenerated += (sender, args) =>
+                {
+                    if (args.Result.Text.Contains("time", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SpeakCurrentTime();
+                    }
+                    OnRecognized?.Invoke(args.Result.Text);
+                };
+#endif
                 _isInitialized = true;
+                Console.WriteLine("Speech recognizer initialized successfully");
             }
             catch (Exception ex)
             {
@@ -61,7 +99,7 @@ namespace TimeCheck.Services
 
         public async Task StartContinuousRecognitionAsync()
         {
-            if (!_isInitialized || _recognizer == null)
+            if (!_isInitialized)
             {
                 System.Console.WriteLine("Speech service not initialized");
                 return;
@@ -69,28 +107,21 @@ namespace TimeCheck.Services
 
             try
             {
-                await _recognizer.StartContinuousRecognitionAsync().ConfigureAwait(false);
+#if ANDROID
+                var intent = new Intent(RecognizerIntent.ActionRecognizeSpeech);
+                intent.PutExtra(RecognizerIntent.ExtraLanguageModel, RecognizerIntent.LanguageModelFreeForm);
+                intent.PutExtra(RecognizerIntent.ExtraMaxResults, 1);
+                _recognizer?.StartListening(intent);
+#elif WINDOWS
+                if (_recognizer?.ContinuousRecognitionSession != null)
+                {
+                    await _recognizer.ContinuousRecognitionSession.StartAsync();
+                }
+#endif
             }
             catch (Exception ex)
             {
                 System.Console.WriteLine($"Error starting recognition: {ex}");
-            }
-        }
-
-        private void Recognizer_Recognized(object? sender, SpeechRecognitionEventArgs e)
-        {
-            if (e.Result.Reason == ResultReason.RecognizedSpeech)
-            {
-                Console.WriteLine($"Recognized: {e.Result.Text}");
-                OnRecognized?.Invoke(e.Result.Text);
-                if (e.Result.Text.Contains(" time", StringComparison.OrdinalIgnoreCase))
-                {
-                    SpeakCurrentTime();
-                }
-            }
-            else
-            {
-                Console.WriteLine("Speech not recognized.");
             }
         }
 
@@ -101,6 +132,24 @@ namespace TimeCheck.Services
             if (_tts != null)
             {
                 _tts.Speak($"The current time is {currentTime}", Android.Speech.Tts.QueueMode.Flush, null);
+            }
+#elif WINDOWS
+            if (_synthesizer != null)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var stream = await _synthesizer.SynthesizeTextToStreamAsync($"The current time is {currentTime}");
+                        var mediaPlayer = new Windows.Media.Playback.MediaPlayer();
+                        mediaPlayer.Source = Windows.Media.Core.MediaSource.CreateFromStream(stream, stream.ContentType);
+                        mediaPlayer.Play();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Console.WriteLine($"Error speaking time: {ex}");
+                    }
+                });
             }
 #endif
         }
@@ -118,6 +167,33 @@ namespace TimeCheck.Services
             else
             {
                 Console.WriteLine("Failed to initialize TTS");
+            }
+        }
+    }
+
+    public class SpeechRecognitionListener : Java.Lang.Object, IRecognitionListener
+    {
+        public Action<string>? OnRecognizedAction { get; set; }
+
+        public void OnBeginningOfSpeech() { }
+        public void OnBufferReceived(byte[]? buffer) { }
+        public void OnEndOfSpeech() { }
+        public void OnError([GeneratedEnum] SpeechRecognizerError error) 
+        {
+            Console.WriteLine($"Speech recognition error: {error}");
+        }
+        public void OnEvent(int eventType, Bundle? @params) { }
+        public void OnPartialResults(Bundle? partialResults) { }
+        public void OnReadyForSpeech(Bundle? @params) { }
+        public void OnRmsChanged(float rmsdB) { }
+
+        public void OnResults(Bundle? results)
+        {
+            var matches = results?.GetStringArrayList(Android.Speech.SpeechRecognizer.ResultsRecognition);
+            if (matches?.Count > 0)
+            {
+                var text = matches[0];
+                OnRecognizedAction?.Invoke(text);
             }
         }
     }
