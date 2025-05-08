@@ -18,9 +18,6 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
 
-        // Register SpeechService - now using offline speech recognition
-        builder.Services.AddSingleton<SpeechService>();
-
         // Register MainPage
         builder.Services.AddTransient<MainPage>();
 

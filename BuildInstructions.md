@@ -11,6 +11,7 @@ dotnet build TimeCheck.csproj
 ## Running the Project
 
 To run the project, use one of these commands depending on your target platform:
+adb devices
 
 ### Androidw'hhtime'
 ```bash

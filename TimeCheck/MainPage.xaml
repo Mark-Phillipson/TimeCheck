@@ -11,7 +11,7 @@
             <RootComponent Selector="#app" ComponentType="{x:Type shared:Routes}" />
         </BlazorWebView.RootComponents>
     </BlazorWebView> -->
-    <StackLayout>
+    <StackLayout VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
         <Label x:Name="HelpLabel"
                Text="Say 'what is the time'"
                FontSize="32"
@@ -20,10 +20,26 @@
                VerticalOptions="Center"/>
         <Label x:Name="TimeLabel"
                Text="00:00"
-               FontSize="72"
-               HorizontalOptions="Center"
-               Margin="20"
-               VerticalOptions="Center"/>
+               FontSize="120"
+               HorizontalOptions="FillAndExpand"
+               VerticalOptions="FillAndExpand"
+               VerticalTextAlignment="Center"
+               HorizontalTextAlignment="Center"
+               Margin="20"/>
+        <Button x:Name="StartListeningButton"
+                Text="Speak Time"
+                FontSize="28"
+                HorizontalOptions="FillAndExpand"
+                Margin="20"
+                VerticalOptions="Center"
+                Clicked="StartListeningButton_Clicked"/>
+        <Button x:Name="CloseAppButton"
+                Text="Close App"
+                FontSize="28"
+                HorizontalOptions="FillAndExpand"
+                Margin="20"
+                VerticalOptions="Center"
+                Clicked="CloseAppButton_Clicked"/>
     </StackLayout>
 
 
