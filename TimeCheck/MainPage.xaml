@@ -33,8 +33,15 @@
                 Margin="20"
                 VerticalOptions="Center"
                 Clicked="StartListeningButton_Clicked"/>
+        <Button x:Name="MinimizeAppButton"
+                Text="Minimize App"
+                FontSize="28"
+                HorizontalOptions="FillAndExpand"
+                Margin="20"
+                VerticalOptions="Center"
+                Clicked="MinimizeAppButton_Clicked"/>
         <Button x:Name="CloseAppButton"
-                Text="Close App"
+                Text="Close App Completely"
                 FontSize="28"
                 HorizontalOptions="FillAndExpand"
                 Margin="20"

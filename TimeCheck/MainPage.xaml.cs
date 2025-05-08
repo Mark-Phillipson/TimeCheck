@@ -149,14 +149,27 @@ namespace TimeCheck
         }
 #endif
 
+        private void MinimizeAppButton_Clicked(object sender, EventArgs e)
+        {
+#if ANDROID
+            Platform.CurrentActivity.MoveTaskToBack(true);
+#elif WINDOWS || WINDOWS10_0_17763_0 || WINDOWS10_0_19041_0
+            // Minimize is not supported in MAUI Windows at this time
+            HelpLabel.Text = "Minimize is not supported on Windows.";
+#else
+            HelpLabel.Text = "Minimize is not supported on this platform.";
+#endif
+        }
+
         private void CloseAppButton_Clicked(object sender, EventArgs e)
         {
 #if WINDOWS || WINDOWS10_0_17763_0 || WINDOWS10_0_19041_0
-            Application.Current.Quit();
+            // Forcefully terminate the process for a true app exit
+            System.Diagnostics.Process.GetCurrentProcess().Kill();
 #elif ANDROID
-            Platform.CurrentActivity.FinishAffinity();
+            // Forcefully terminate the app process
+            Java.Lang.JavaSystem.Exit(0);
 #else
-            // Optionally show a message for unsupported platforms
             HelpLabel.Text = "Close App is not supported on this platform.";
 #endif
         }

@@ -1,5 +1,4 @@
 # Build and Run Instructions for TimeCheck
-
 ## Building the Project
 
 To build the project, open a terminal in the project root directory and run:
