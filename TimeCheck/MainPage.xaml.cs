@@ -118,7 +118,11 @@ namespace TimeCheck
                         _tts.Speak($"The current time is {currentTime}", Android.Speech.Tts.QueueMode.Flush, null);
                     }
                 }
-                else
+                else if (_tts == null)
+                {
+                    HelpLabel.Text = "Text-to-speech service is not initialized.";
+                }
+                else if (!_ttsReady)
                 {
                     HelpLabel.Text = "Text-to-speech not ready. Please try again in a moment.";
                 }
