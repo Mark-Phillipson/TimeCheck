@@ -24,6 +24,17 @@ namespace TimeCheck
         public MainPage()
         {
             InitializeComponent();
+            SizeChanged += MainPage_SizeChanged;
+        }
+
+        private void MainPage_SizeChanged(object sender, EventArgs e)
+        {
+            // Hide all buttons except Speak Time in landscape
+            bool isLandscape = Width > Height;
+            MinimizeAppButton.IsVisible = !isLandscape;
+            CloseAppButton.IsVisible = !isLandscape;
+            // Adjust time label font size in landscape
+            TimeLabel.FontSize = isLandscape ? 70 : 120;
         }
 
         protected override void OnAppearing()
@@ -47,11 +58,11 @@ namespace TimeCheck
 
         private void UpdateTimeLabel()
         {
-            var currentTime = DateTime.Now.ToString("h:mm");
+            var currentTime = DateTime.Now.ToString("hh:mm");
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 TimeLabel.Text = currentTime;
-                HelpLabel.Text = "Last updated: " + DateTime.Now.ToString("h:mm:ss tt");
+                HelpLabel.Text = "Last updated: " + DateTime.Now.ToString("h:mm:ss tt 'on' dddd, MMMM dd, yyyy");
             });
         }
 

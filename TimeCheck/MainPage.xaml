@@ -14,10 +14,12 @@
     <StackLayout VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
         <Label x:Name="HelpLabel"
                Text="Say 'what is the time'"
-               FontSize="32"
+               FontSize="18"
+               LineBreakMode="WordWrap"
+               MaxLines="2"
                HorizontalOptions="Center"
-               Margin="20"
-               VerticalOptions="Center"/>
+               Margin="10,20,10,5"
+               VerticalOptions="Start"/>
         <Label x:Name="TimeLabel"
                Text="00:00"
                FontSize="120"
