@@ -91,16 +91,21 @@ namespace TimeCheck
 #if WINDOWS || WINDOWS10_0_17763_0 || WINDOWS10_0_19041_0
             try
             {
-                var currentTime = DateTime.Now.ToString("h:mm tt on MMMM dd");
+                var currentTime = DateTime.Now.ToString("h:mm tt");
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
                     try
                     {
                         var synthesizer = new Windows.Media.SpeechSynthesis.SpeechSynthesizer();
-                        var stream = await synthesizer.SynthesizeTextToStreamAsync($"The current time is {currentTime}");
-                        var mediaPlayer = new Windows.Media.Playback.MediaPlayer();
-                        mediaPlayer.Source = Windows.Media.Core.MediaSource.CreateFromStream(stream, stream.ContentType);
-                        mediaPlayer.Play();
+                        for (int i = 0; i < 3; i++)
+                        {
+                            var stream = await synthesizer.SynthesizeTextToStreamAsync($"The time is {currentTime}");
+                            var mediaPlayer = new Windows.Media.Playback.MediaPlayer();
+                            mediaPlayer.Source = Windows.Media.Core.MediaSource.CreateFromStream(stream, stream.ContentType);
+                            mediaPlayer.Play();
+                            // Wait for the speech to finish before repeating
+                            await Task.Delay(2500); // Adjust delay as needed for clarity
+                        }
                     }
                     catch (System.Exception ex)
                     {
@@ -117,16 +122,19 @@ namespace TimeCheck
             {
                 if (_tts != null && _ttsReady)
                 {
-                    var currentTime = DateTime.Now.ToString("h:mm tt on MMMM dd");
-                    if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop)
+                    var currentTime = DateTime.Now.ToString("h:mm tt");
+                    for (int i = 0; i < 3; i++)
                     {
+                        if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop)
+                        {
 #pragma warning disable CS0618
-                        _tts.Speak($"The current time is {currentTime}", Android.Speech.Tts.QueueMode.Flush, null, "utteranceId");
+                            _tts.Speak($"The time is {currentTime}", Android.Speech.Tts.QueueMode.Add, null, $"utteranceId_{i}");
 #pragma warning restore CS0618
-                    }
-                    else
-                    {
-                        _tts.Speak($"The current time is {currentTime}", Android.Speech.Tts.QueueMode.Flush, null);
+                        }
+                        else
+                        {
+                            _tts.Speak($"The time is {currentTime}", Android.Speech.Tts.QueueMode.Add, null);
+                        }
                     }
                 }
                 else if (_tts == null)

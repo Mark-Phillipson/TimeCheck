@@ -11,6 +11,7 @@ dotnet build TimeCheck.csproj
 
 To run the project, use one of these commands depending on your target platform:
 adb devices
+adb pair <ip_address>:<pairing_port>
 
 ### Androidw'hhtime'
 ```bash
