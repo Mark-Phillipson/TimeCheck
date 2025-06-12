@@ -11,47 +11,88 @@
             <RootComponent Selector="#app" ComponentType="{x:Type shared:Routes}" />
         </BlazorWebView.RootComponents>
     </BlazorWebView> -->
-    <StackLayout VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        
         <Label x:Name="HelpLabel"
+               Grid.Row="0"
                Text="Say 'what is the time'"
                FontSize="18"
                LineBreakMode="WordWrap"
                MaxLines="2"
                HorizontalOptions="Center"
-               Margin="10,20,10,5"
-               VerticalOptions="Start"/>
+               Margin="10,20,10,5" />
+               
         <Label x:Name="TimeLabel"
+               Grid.Row="1"
                Text="00:00"
                FontSize="120"
-               HorizontalOptions="FillAndExpand"
-               VerticalOptions="FillAndExpand"
                VerticalTextAlignment="Center"
                HorizontalTextAlignment="Center"
                Margin="20"/>
+               
+        <!-- Mode Toggle Buttons -->
+        <Grid Grid.Row="2" Margin="20,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            
+            <Button x:Name="TimeCheckModeButton"
+                    Grid.Column="0"
+                    Text="Time Check Mode"
+                    FontSize="18"
+                    Margin="0,0,5,0"
+                    BackgroundColor="LightGreen"
+                    Clicked="TimeCheckModeButton_Clicked"/>
+            <Button x:Name="EncouragementModeButton"
+                    Grid.Column="1"
+                    Text="Cycling Encouragement"
+                    FontSize="18"
+                    Margin="5,0,0,0"
+                    BackgroundColor="LightGray"
+                    Clicked="EncouragementModeButton_Clicked"/>
+        </Grid>
+        
+        <!-- Current Mode Label -->
+        <Label x:Name="CurrentModeLabel"
+               Grid.Row="3"
+               Text="Current Mode: Time Check (announces time every 5 minutes)"
+               FontSize="14"
+               HorizontalOptions="Center"
+               Margin="10,0,10,10"
+               TextColor="Gray"/>
+        
         <Button x:Name="StartListeningButton"
+                Grid.Row="4"
                 Text="Speak Time"
                 FontSize="28"
-                HorizontalOptions="FillAndExpand"
                 Margin="20"
-                VerticalOptions="Center"
                 Clicked="StartListeningButton_Clicked"/>
+                
         <Button x:Name="MinimizeAppButton"
+                Grid.Row="5"
                 Text="Minimize App"
                 FontSize="28"
-                HorizontalOptions="FillAndExpand"
                 Margin="20"
-                VerticalOptions="Center"
                 Clicked="MinimizeAppButton_Clicked"/>
+                
         <Button x:Name="CloseAppButton"
+                Grid.Row="6"
                 Text="Close App Completely"
                 FontSize="28"
-                HorizontalOptions="FillAndExpand"
                 Margin="20"
-                VerticalOptions="Center"
                 Clicked="CloseAppButton_Clicked"/>
-    </StackLayout>
-
-
-
+    </Grid>
 
 </ContentPage>
