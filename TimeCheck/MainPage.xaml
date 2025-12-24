@@ -43,13 +43,12 @@
                
         <!-- Mode Toggle Buttons -->
         <Grid Grid.Row="2" Margin="20,10">
-                <Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            </Grid.ColumnDefinitions>
 
-                <Button x:Name="TimeCheckModeButton"
+            <Button x:Name="TimeCheckModeButton"
                     Grid.Column="0"
                     Text="Time Check Mode"
                     FontSize="18"
@@ -58,18 +57,11 @@
                     Clicked="TimeCheckModeButton_Clicked"/>
                 <Button x:Name="EncouragementModeButton"
                     Grid.Column="1"
-                    Text="Cycling Encouragement"
-                    FontSize="18"
-                    Margin="5,0,5,0"
-                    BackgroundColor="LightGray"
-                    Clicked="EncouragementModeButton_Clicked"/>
-                <Button x:Name="ChristmasModeButton"
-                    Grid.Column="2"
-                    Text="Christmas Cheer"
+                    Text="Beast Me"
                     FontSize="18"
                     Margin="5,0,0,0"
                     BackgroundColor="LightGray"
-                    Clicked="ChristmasModeButton_Clicked"/>
+                    Clicked="EncouragementModeButton_Clicked"/>
         </Grid>
         
         <!-- Current Mode Label -->

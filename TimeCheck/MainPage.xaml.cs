@@ -19,121 +19,111 @@ namespace TimeCheck
         private Android.Speech.Tts.TextToSpeech? _tts;
         private bool _ttsReady = false;
 #endif        // Mode management
-        private enum Mode { TimeCheck, Cycling, Christmas }
+        private enum Mode { TimeCheck, Cycling }
         private Mode _currentMode = Mode.TimeCheck; // Start with time check mode
         private readonly List<string> _cyclingEncouragements = new List<string>
         {
-            // General Motivation
-            "Keep pedaling! Every hill makes you stronger!",
-            "You're doing great! Hills are just strength training in disguise!",
-            "Push through! The view from the top is worth it!",
-            "One pedal at a time! You've got this uphill climb!",
-            "Hills build character and strong legs! Keep going!",
-            "Remember, what goes up must come down - enjoy the descent!",
-            "You're conquering this hill like a champion cyclist!",
-            "Every uphill battle makes you feel like flying!",
-            "Hills are where legends are made! You're becoming one!",
-            "The steeper the hill, the stronger you become!",
-            
-            // Achievement and Progress
-            "Every meter climbed is a victory worth celebrating!",
-            "You're setting new personal records with every ride!",
-            "This climb is making you the cyclist you've always wanted to be!",
-            "Your progress is visible in every confident pedal stroke!",
-            "You're rewriting the definition of what's possible on a bike!",
-            "Each hill conquered adds to your cycling legacy!",
-            "Your improvement is inspiring - keep pushing those limits!",
-            "You're becoming the cyclist others aspire to be!",
-            "This climb is proof of how far you've come!",
-            "Your dedication is transforming you into a climbing machine!",
-            
-            // Energy and Power
-            "Feel that power flowing through your legs!",
-            "You're an unstoppable cycling force of nature!",
-            "Channel your inner cycling dynamo and power through!",
-            "Your legs are pistons of pure cycling energy!",
-            "Unleash the beast within - you're stronger than you know!",
-            "Every breath fuels your incredible cycling machine!",
-            "You're generating serious watts up this incline!",
-            "Tap into that deep well of cycling strength!",
-            "Your power output is absolutely phenomenal!",
-            "Feel the surge of energy as you dominate this climb!",
-            
-            // Scenic and Inspirational
-            "The best views come after the hardest climbs!",
-            "You're earning every beautiful vista with each pedal stroke!",
-            "This struggle is the price of admission to cycling paradise!",
-            "The summit view will be worth every challenging meter!",
-            "You're creating memories that will last a lifetime!",
-            "This hill is your gateway to cycling enlightenment!",
-            "The descent awaits - earn it with this magnificent climb!",
-            "You're writing your own cycling adventure story!",
-            "Every hill conquered adds another chapter to your cycling journey!",
-            "This climb is preparing you for even greater cycling adventures!",
-            
-            // Comparative and Competitive
-            "You're climbing stronger than yesterday's version of yourself!",
-            "This hill doesn't stand a chance against your determination!",
-            "You're outpacing doubt and self-limitation with every rotation!",
-            "Your climbing ability is evolving with every challenging ride!",
-            "You're racing against your former limits and winning!",
-            "This incline is no match for your upgraded cycling skills!",
-            "You're demolishing personal barriers one hill at a time!",
-            "Your progress would make professional cyclists proud!",
-            "You're climbing like someone who refuses to accept defeat!",
-            "Your improvement trajectory is absolutely remarkable!",
-            
-            // Motivational Metaphors
-            "You're a cycling phoenix rising above every challenge!",
-            "This hill is just another stepping stone to cycling greatness!",
-            "You're forging cycling steel in the fire of this incline!",
-            "Like a cycling alchemist, you're turning struggle into strength!",
-            "You're the architect of your own cycling success story!",
-            "This climb is sculpting you into a cycling masterpiece!",
-            "You're a cycling warrior conquering the battlefield of hills!",
-            "Every pedal stroke is painting your cycling legacy!",
-            "You're the captain of your cycling destiny!",
-            "This hill is your cycling classroom, and you're acing the test!",
-            
-            // Encouragement for Persistence
-            "Keep going - your breakthrough moment is just ahead!",
-            "Persistence is your cycling superpower - use it now!",
-            "You've never regretted finishing a challenging climb!",
-            "Your future self will thank you for not giving up!",
-            "Champions are made in moments exactly like this one!",
-            "This is where ordinary cyclists become extraordinary!",
-            "Your refusal to quit is what separates you from the rest!",
-            "Every second you persist is building cycling character!",
-            "You're proving that you have the heart of a true cyclist!",
-            "Quitting is not in your cycling vocabulary!",
-            
-            // Final Push and Summit
-            "You're so close to the top - dig deep and finish strong!",
-            "The summit is calling your name - answer with power!",
-            "These final meters will define your cycling character!",
-            "You can almost taste the victory of reaching the top!",
-            "Push through this last section like the champion you are!",
-            "The finish line of this climb is within your grasp!",
-            "You're meters away from another cycling triumph!",
-            "This is your moment to shine as a cyclist!",
-            "Cross that summit line with pride and power!",
-            "You're about to add another conquered hill to your legacy!"
+            "Move it, you splendid sod — pedal like the sergeant's watching!",
+            "Put some bleeding effort into it, you horrible little man!",
+            "Eyes front, legs turning — show those tarmac traitors who's boss!",
+            "Pick up the pace, you dawdling peacock!",
+            "Don't wheeze like a pensioner; give it some welly!",
+            "You're not on a Sunday stroll — pedal like it's a route march!",
+            "Shift that backside and make those pedals pay attention!",
+            "Come on, you glorious wreck, churn those gears!",
+            "Legs like pistons, soldier — get them firing!",
+            "If the sergeant heard that wheeze he'd have you doing laps!",
+            "Stop admiring the scenery and start punishing the road!",
+            "Waste not a breath moaning — burn it into forward motion!",
+            "Bend metal with your thighs, you magnificent nuisance!",
+            "Don't be a biscuit — pedal like someone stole your tea!",
+            "One more push and you'll be less pathetic and more presentable!",
+            "Keep it moving, you daft mariner of the road!",
+            "Slog through it — the hill's just showing off, not you!",
+            "Don't be a limp noodle; be a proper bit of kit!",
+            "Pedal like you put a bet on your finish time!",
+            "No dawdling — the road doesn't care about your excuses!",
+            "Sound off with your legs, not your complaints!",
+            "Give it the beans, you marvelous underachiever!",
+            "Quit moaning and let your wheels do the talking!",
+            "Harden up and pedal, — charm is strictly optional!",
+            "Stop faffing around and make that incline regret its choices!",
+            "Sweat like a saint and pedal like a sinner caught stealing!",
+            "Pull yourself together and show that hill no mercy!",
+            "Legs on fire? Good — that's improvement cooking!",
+            "Mind over gearbox — think hard, pedal harder!",
+            "You're nearly there, you stubborn bit of brilliance!",
+            "Keep going — this isn't supposed to be easy, darling!",
+            "Hustle up, you caffeine-fuelled battalion of one!",
+            "If you slow now you'll only have to face the shame later!",
+            "Charge like a confused cavalryman — full speed, less thinking!",
+            "Move like you mean it, and mean it loudly!",
+            "Stop being polite to the hill — it's rude enough already!",
+            "This isn't a promenade — it's a proving ground!",
+            "Pedal like you've misplaced your dignity and found it downhill!",
+            "Be the nuisance the hill never asked for!",
+            "Get on with it — the tarmac won't applaud, but you'll know!",
+            "Hurry up, you magnificent so-and-so, and keep those legs honest!",
+            "Power through like a bloke with a point to prove!",
+            "Don't let the hill have the last laugh — pedal louder!",
+            "If your legs could speak they'd apologise for the noise. Make them proud!",
+            "Stop looking for sympathy — the road gives none!",
+            "Give 'em hell and call it an interval session!",
+            "Pedal like you owe the crown money and they're coming to collect!",
+            "Hurry up — the next village won't wait for your theatrics!",
+            "When in doubt, stand on the pedals and swear at the incline!",
+            "Put a bit of elbow grease into those pedals, why don't you!",
+            "Muster some grit and show that slope who's boss!",
+            "Don't be meeker than a mouse in parade rest — push!",
+            "Squeeze the road for all it's worth; there's no refund!",
+            "Act like it's the last mile of the parade — loud and proud!",
+            "Leg power now, excuses at the pub later!",
+            "You're nearly earning your bragging rights — don't squander them!",
+            "Give it a right old go, you splendidly misdirected soul!",
+            "If you can grumble, you can pedal harder — start doing both!",
+            "Pretend you're late for tea — nothing gets you going like that!",
+            "Push like a corporal with a stopwatch — efficient and noisy!",
+            "Stop being delicate; be a proper, slightly sweaty legend!",
+            "Drive those pedals like they're enemy territory!",
+            "Don't just roll — dominate the rotation!",
+            "Look fierce, pedal fiercer — psychological warfare, that is!",
+            "If your legs had medals, they'd be heavy by now — earn 'em!",
+            "Don't give the hill satisfaction — take it for yourself!",
+            "Act like you trained for this in a shed and keep proving it!",
+            "Throw some oomph into it — your bike needs moral support!",
+            "Keep the cadence up; lethargy is for someone else's ride!",
+            "Stride those pedals with the stubbornness of a mule and the grace of a drunk dancer!",
+            "Put the boot in, metaphorically and with your calves!",
+            "Imagine the hill's your ex — pass it without apology!",
+            "Don't ask for easy; ask for more pedals and less complaining!",
+            "Act like this is training for something mysterious and important!",
+            "You're not here to look pretty, you're here to get up the hill!",
+            "Stand up, push down, and swear softly at your inner critic!",
+            "Remember: sweat is just proof you've been brutally honest with yourself!",
+            "Be the sort of cyclist that makes the hill reconsider its life choices!",
+            "Push like a man who knows the pub shutters close soon!",
+            "Pedal like you nicked somebody's sandwich and need to get away!",
+            "Keep going — half-hearted effort is for vegetables!",
+            "Treat the hill like a minor annoyance and ride it out!",
+            "You look better in motion; keep the show on the road!",
+            "Grin like a soldier, pedal like a machine — results follow!",
+            "Pedal with intent or at least with good posture!",
+            "Show that gradient you have a spine of iron and a sense of humour!",
+            "Don't be a spectator in your own ride — be the event!",
+            "Finish this climb and call it a character-building exercise!",
+            "Legs, meet challenge. Challenge, meet relentless persistence!",
+            "When your legs scream, that's just applause from the future you!",
+            "Storm that summit like it's a particularly loud drum!",
+            "Be ridiculous, be brave, be sweaty — and keep pedalling!",
+            "You've got the kit and the cheek — now use both!",
+            "Make this climb regret ever daring to stand in your way!",
+            "Now pedal, you glorious incompetent — make it count!"
         };
 
-        private readonly List<string> _christmasCheer = new List<string>
-        {
-            "Merry Christmas! May your day be filled with joy and laughter!",
-            "Wishing you a magical holiday season!",
-            "Let the spirit of Christmas warm your heart!",
-            "May your home be bright with Christmas lights and love!",
-            "Spread cheer and kindness wherever you go this Christmas!",
-            "May your Christmas be wrapped in happiness and tied with love!",
-            "Jingle all the way to a wonderful holiday!",
-            "May your days be merry and bright!",
-            "Enjoy the festive moments and make memories to last!",
-            "Wishing you peace, love, and joy this Christmas!"
-        };
+        
         private readonly Random _random = new Random();
+        private readonly double _encMinMinutes = 1.0; // minimum random interval in minutes
+        private readonly double _encMaxMinutes = 10.0; // maximum random interval in minutes
 
         public MainPage()
         {
@@ -213,14 +203,31 @@ namespace TimeCheck
                 return true; // Repeat every 5 minutes
             });
 
-            // Encouragement/Cheer Mode: Say encouragement every 10 minutes (once)
-            Dispatcher.StartTimer(TimeSpan.FromMinutes(10), () =>
+            // Encouragement Mode: schedule encouragements at random intervals
+            ScheduleNextEncouragement();
+        }
+
+        private void ScheduleNextEncouragement()
+        {
+            // Pick a random delay between min and max minutes (fractional allowed)
+            double minutes = _random.NextDouble() * (_encMaxMinutes - _encMinMinutes) + _encMinMinutes;
+            var delay = TimeSpan.FromMinutes(minutes);
+
+            // Optionally show next scheduled time in the help label
+            MainThread.BeginInvokeOnMainThread(() =>
             {
-                if (_currentMode == Mode.Cycling || _currentMode == Mode.Christmas)
+                HelpLabel.Text = $"Next encouragement in {System.Math.Round(minutes, 1)} minutes.";
+            });
+
+            Dispatcher.StartTimer(delay, () =>
+            {
+                if (_currentMode == Mode.Cycling)
                 {
                     SayEncouragement();
                 }
-                return true; // Repeat every 10 minutes
+                // Schedule the following encouragement (recursive scheduling)
+                ScheduleNextEncouragement();
+                return false; // don't repeat this timer — we've rescheduled
             });
         }
 
@@ -306,9 +313,7 @@ namespace TimeCheck
 
         private void SayEncouragement()
         {
-            string encouragement = _currentMode == Mode.Christmas
-                ? _christmasCheer[_random.Next(_christmasCheer.Count)]
-                : _cyclingEncouragements[_random.Next(_cyclingEncouragements.Count)];
+            string encouragement = _cyclingEncouragements[_random.Next(_cyclingEncouragements.Count)];
             
 #if WINDOWS || WINDOWS10_0_17763_0 || WINDOWS10_0_19041_0
             try
@@ -378,14 +383,7 @@ namespace TimeCheck
         {
             _currentMode = Mode.Cycling;
             UpdateModeDisplay();
-            HelpLabel.Text = "Mode switched to Cycling Encouragement - motivational messages every 10 minutes.";
-        }
-
-        private void ChristmasModeButton_Clicked(object sender, EventArgs e)
-        {
-            _currentMode = Mode.Christmas;
-            UpdateModeDisplay();
-            HelpLabel.Text = "Mode switched to Christmas Cheer - festive messages every 10 minutes.";
+            HelpLabel.Text = "Mode switched to Cycling Encouragement - motivational messages at random intervals.";
         }
 
         private void UpdateModeDisplay()
@@ -394,25 +392,15 @@ namespace TimeCheck
             {
                 TimeCheckModeButton.BackgroundColor = Colors.LightGreen;
                 EncouragementModeButton.BackgroundColor = Colors.LightGray;
-                ChristmasModeButton.BackgroundColor = Colors.LightGray;
                 CurrentModeLabel.Text = "Current Mode: Time Check (announces time every 5 minutes)";
                 StartListeningButton.Text = "Speak Time";
             }
-            else if (_currentMode == Mode.Cycling)
+            else // Cycling
             {
                 TimeCheckModeButton.BackgroundColor = Colors.LightGray;
                 EncouragementModeButton.BackgroundColor = Colors.LightBlue;
-                ChristmasModeButton.BackgroundColor = Colors.LightGray;
-                CurrentModeLabel.Text = "Current Mode: Cycling Encouragement (motivational messages every 10 minutes)";
+                CurrentModeLabel.Text = "Current Mode: Cycling Encouragement (motivational messages at random intervals)";
                 StartListeningButton.Text = "Speak Encouragement";
-            }
-            else // Christmas
-            {
-                TimeCheckModeButton.BackgroundColor = Colors.LightGray;
-                EncouragementModeButton.BackgroundColor = Colors.LightGray;
-                ChristmasModeButton.BackgroundColor = Colors.Red;
-                CurrentModeLabel.Text = "Current Mode: Christmas Cheer (festive messages every 10 minutes)";
-                StartListeningButton.Text = "Speak Christmas Cheer";
             }
         }
 
