@@ -163,7 +163,15 @@ namespace TimeCheck
 #if ANDROID
             if (_tts == null)
             {
-                _tts = new Android.Speech.Tts.TextToSpeech(Platform.CurrentActivity, new TtsInitListener(this));
+                var activity = Platform.CurrentActivity;
+                if (activity != null)
+                {
+                    _tts = new Android.Speech.Tts.TextToSpeech(activity, new TtsInitListener(this));
+                }
+                else
+                {
+                    HelpLabel.Text = "Text-to-speech activity not available yet.";
+                }
             }
 #endif
         }
@@ -271,15 +279,18 @@ namespace TimeCheck
                     var currentTime = DateTime.Now.ToString("h:mm tt");
                     for (int i = 0; i < 3; i++)
                     {
+                        // Use the modern Bundle overload on Lollipop+ to avoid deprecated IDictionary overloads
                         if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop)
                         {
-#pragma warning disable CS0618
-                            _tts.Speak($"The time is {currentTime}", Android.Speech.Tts.QueueMode.Add, null, $"utteranceId_{i}");
-#pragma warning restore CS0618
+                            var bundle = new Android.OS.Bundle();
+                            _tts.Speak($"The time is {currentTime}", Android.Speech.Tts.QueueMode.Add, bundle, $"utteranceId_{i}");
                         }
                         else
                         {
+                            // Fallback for very old devices — use the older overload (rare path)
+#pragma warning disable CS0618
                             _tts.Speak($"The time is {currentTime}", Android.Speech.Tts.QueueMode.Add, null);
+#pragma warning restore CS0618
                         }
                     }
                 }
@@ -345,13 +356,15 @@ namespace TimeCheck
                 {
                     if (Android.OS.Build.VERSION.SdkInt >= Android.OS.BuildVersionCodes.Lollipop)
                     {
-#pragma warning disable CS0618
-                        _tts.Speak(encouragement, Android.Speech.Tts.QueueMode.Add, null, "encouragement");
-#pragma warning restore CS0618
+                        var bundle = new Android.OS.Bundle();
+                        _tts.Speak(encouragement, Android.Speech.Tts.QueueMode.Add, bundle, "encouragement");
                     }
                     else
                     {
+                        // Fallback for very old devices
+#pragma warning disable CS0618
                         _tts.Speak(encouragement, Android.Speech.Tts.QueueMode.Add, null);
+#pragma warning restore CS0618
                     }
                 }
                 else if (_tts == null)
@@ -419,7 +432,15 @@ namespace TimeCheck
         private void MinimizeAppButton_Clicked(object sender, EventArgs e)
         {
 #if ANDROID
-            Platform.CurrentActivity.MoveTaskToBack(true);
+            var activity = Platform.CurrentActivity;
+            if (activity != null)
+            {
+                activity.MoveTaskToBack(true);
+            }
+            else
+            {
+                HelpLabel.Text = "Unable to minimize right now.";
+            }
 #elif WINDOWS || WINDOWS10_0_17763_0 || WINDOWS10_0_19041_0
             // Minimize is not supported in MAUI Windows at this time
             HelpLabel.Text = "Minimize is not supported on Windows.";

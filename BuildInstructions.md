@@ -56,9 +56,10 @@ dotnet run -f net9.0-windows10.0.19041.0 --project .\TimeCheck\TimeCheck\TimeChe
 3. **Manual testing** - Press the main button to immediately hear time or encouragement
 4. **Automatic announcements**:
    - Time Check: Every 5 minutes (announces 3 times)
-   - Cycling: Every 10 minutes (announces once with random message)
+   - Cycling: Every 1-10 minutes random (announces once with random message)
 
 ## Building the Project
+
 
 To build the project, open a terminal in the project root directory and run:
 
