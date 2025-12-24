@@ -43,8 +43,8 @@ cd "c:\Users\MPhil\source\repos\TimeCheck\TimeCheck\TimeCheck"
 
 # Build and run
 dotnet build TimeCheck.csproj
-dotnet run -f net9.0-windows10.0.19041.0
-dotnet run -f net9.0-windows10.0.19041.0 --project .\TimeCheck\TimeCheck\TimeCheck.csproj
+dotnet run -f net10.0-windows10.0.19041.0
+dotnet run -f net10.0-windows10.0.19041.0 --project .\TimeCheck\TimeCheck\TimeCheck.csproj
 ```
 
 ## 🚴‍♂️ How to Use Your New Features
@@ -71,7 +71,7 @@ dotnet build TimeCheck.csproj
 
 ### Windows (Working)
 ```bash
-dotnet run -f net9.0-windows10.0.19041.0
+dotnet run -f net10.0-windows10.0.19041.0
 ```
 
 ### Android (Currently Disabled)
@@ -86,7 +86,7 @@ The Android target framework has been temporarily disabled due to NuGet PackageS
 
 2. **Option 2**: Edit `TimeCheck.csproj` to include Android again:
    ```xml
-   <TargetFrameworks>net9.0-android;net9.0-windows10.0.19041.0</TargetFrameworks>
+   <TargetFrameworks>net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks>
    ```
 
 **Previous Android commands (for when it's working):**
@@ -96,10 +96,10 @@ adb devices
 adb pair 192.168.0.3:33451
 
 # Build and run for Android
-dotnet run -f net9.0-android
-dotnet run -f net9.0-android --project .\TimeCheck\TimeCheck\TimeCheck.csproj
-dotnet build -f:net9.0-android -c:Debug /t:Install
-dotnet build -f net9.0-android && dotnet build -t:Run -f net9.0-android
+dotnet run -f net10.0-android
+dotnet run -f net10.0-android --project .\TimeCheck\TimeCheck\TimeCheck.csproj
+dotnet build -f:net10.0-android -c:Debug /t:Install
+dotnet build -f net10.0-android && dotnet build -t:Run -f net10.0-android
 ```
 
 ## Note

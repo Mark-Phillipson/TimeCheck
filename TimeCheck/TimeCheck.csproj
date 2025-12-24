@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk;Microsoft.NET.Sdk.Razor">  <PropertyGroup>
-    <TargetFrameworks>net9.0-android;net9.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks>net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks>
     <!-- Android temporarily disabled due to file access issues - can be re-enabled later -->
-    <!-- To re-enable: <TargetFrameworks>net9.0-android;net9.0-windows10.0.19041.0</TargetFrameworks> -->
+    <!-- To re-enable: <TargetFrameworks>net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks> -->
     <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
-    <!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
+    <!-- <TargetFrameworks>$(TargetFrameworks);net10.0-tizen</TargetFrameworks> -->
 
     <!-- Note for MacCatalyst:
       The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
@@ -59,7 +59,7 @@
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.47.0" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-rc.2.24473.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
     <PackageReference Include="System.Speech" Version="8.0.0" />
   </ItemGroup>
 
