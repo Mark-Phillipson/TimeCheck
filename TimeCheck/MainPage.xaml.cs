@@ -19,7 +19,8 @@ namespace TimeCheck
         private Android.Speech.Tts.TextToSpeech? _tts;
         private bool _ttsReady = false;
 #endif        // Mode management
-        private bool _isTimeCheckMode = true; // Start with time check mode
+        private enum Mode { TimeCheck, Cycling, Christmas }
+        private Mode _currentMode = Mode.TimeCheck; // Start with time check mode
         private readonly List<string> _cyclingEncouragements = new List<string>
         {
             // General Motivation
@@ -30,45 +31,9 @@ namespace TimeCheck
             "Hills build character and strong legs! Keep going!",
             "Remember, what goes up must come down - enjoy the descent!",
             "You're conquering this hill like a champion cyclist!",
-            "Every uphill battle makes the flat roads feel like flying!",
+            "Every uphill battle makes you feel like flying!",
             "Hills are where legends are made! You're becoming one!",
             "The steeper the hill, the stronger you become!",
-            
-            // Hill Climbing Specific
-            "Embrace the burn! Your legs are getting stronger with every pedal stroke!",
-            "This hill is temporary, but your strength is permanent!",
-            "Channel your inner mountain goat - you were born to climb!",
-            "Every hill is a chance to prove your cycling prowess!",
-            "Hills don't get easier, you just get stronger!",
-            "Conquer this incline like the cycling warrior you are!",
-            "Your bike is your steed, and you're climbing to victory!",
-            "Each pedal stroke is writing your cycling success story!",
-            "Hills are nature's way of making you a better cyclist!",
-            "Rise above the challenge - literally and figuratively!",
-            
-            // Mental Strength
-            "Your mind is stronger than this hill - prove it!",
-            "Pain is temporary, but the satisfaction of conquering this hill is forever!",
-            "You've climbed harder hills than this - keep that momentum!",
-            "Transform this struggle into strength!",
-            "Every difficult climb makes you mentally tougher!",
-            "Your determination is more powerful than any incline!",
-            "This hill is testing your character - show it what you're made of!",
-            "Mental fortitude is your secret cycling weapon!",
-            "You're not just climbing a hill, you're building resilience!",
-            "Turn this challenge into your cycling triumph!",
-            
-            // Technique and Form
-            "Steady rhythm, controlled breathing - you've got this technique down!",
-            "Keep your cadence smooth and let your fitness carry you!",
-            "Perfect your climbing form with every pedal revolution!",
-            "Stay seated and maintain that powerful pedal stroke!",
-            "Your technique is improving with every challenging climb!",
-            "Focus on efficiency - smooth, powerful, relentless!",
-            "Keep those shoulders relaxed and legs driving forward!",
-            "You're dancing on the pedals like a true cyclist!",
-            "Maintain that beautiful cycling rhythm up this incline!",
-            "Your form is poetry in motion on two wheels!",
             
             // Achievement and Progress
             "Every meter climbed is a victory worth celebrating!",
@@ -154,6 +119,20 @@ namespace TimeCheck
             "Cross that summit line with pride and power!",
             "You're about to add another conquered hill to your legacy!"
         };
+
+        private readonly List<string> _christmasCheer = new List<string>
+        {
+            "Merry Christmas! May your day be filled with joy and laughter!",
+            "Wishing you a magical holiday season!",
+            "Let the spirit of Christmas warm your heart!",
+            "May your home be bright with Christmas lights and love!",
+            "Spread cheer and kindness wherever you go this Christmas!",
+            "May your Christmas be wrapped in happiness and tied with love!",
+            "Jingle all the way to a wonderful holiday!",
+            "May your days be merry and bright!",
+            "Enjoy the festive moments and make memories to last!",
+            "Wishing you peace, love, and joy this Christmas!"
+        };
         private readonly Random _random = new Random();
 
         public MainPage()
@@ -227,17 +206,17 @@ namespace TimeCheck
             // Time Check Mode: Say the time every 5 minutes (3 times)
             Dispatcher.StartTimer(TimeSpan.FromMinutes(5), () =>
             {
-                if (_isTimeCheckMode)
+                if (_currentMode == Mode.TimeCheck)
                 {
                     SayTime();
                 }
                 return true; // Repeat every 5 minutes
             });
 
-            // Encouragement Mode: Say encouragement every 10 minutes (once)
+            // Encouragement/Cheer Mode: Say encouragement every 10 minutes (once)
             Dispatcher.StartTimer(TimeSpan.FromMinutes(10), () =>
             {
-                if (!_isTimeCheckMode)
+                if (_currentMode == Mode.Cycling || _currentMode == Mode.Christmas)
                 {
                     SayEncouragement();
                 }
@@ -315,7 +294,7 @@ namespace TimeCheck
 #endif
         }        private void StartListeningButton_Clicked(object sender, EventArgs e)
         {
-            if (_isTimeCheckMode)
+            if (_currentMode == Mode.TimeCheck)
             {
                 SayTime();
             }
@@ -327,7 +306,9 @@ namespace TimeCheck
 
         private void SayEncouragement()
         {
-            string encouragement = _cyclingEncouragements[_random.Next(_cyclingEncouragements.Count)];
+            string encouragement = _currentMode == Mode.Christmas
+                ? _christmasCheer[_random.Next(_christmasCheer.Count)]
+                : _cyclingEncouragements[_random.Next(_cyclingEncouragements.Count)];
             
 #if WINDOWS || WINDOWS10_0_17763_0 || WINDOWS10_0_19041_0
             try
@@ -388,33 +369,50 @@ namespace TimeCheck
 
         private void TimeCheckModeButton_Clicked(object sender, EventArgs e)
         {
-            _isTimeCheckMode = true;
+            _currentMode = Mode.TimeCheck;
             UpdateModeDisplay();
             HelpLabel.Text = "Mode switched to Time Check - announces time every 5 minutes (3 times).";
         }
 
         private void EncouragementModeButton_Clicked(object sender, EventArgs e)
         {
-            _isTimeCheckMode = false;
+            _currentMode = Mode.Cycling;
             UpdateModeDisplay();
             HelpLabel.Text = "Mode switched to Cycling Encouragement - motivational messages every 10 minutes.";
         }
 
+        private void ChristmasModeButton_Clicked(object sender, EventArgs e)
+        {
+            _currentMode = Mode.Christmas;
+            UpdateModeDisplay();
+            HelpLabel.Text = "Mode switched to Christmas Cheer - festive messages every 10 minutes.";
+        }
+
         private void UpdateModeDisplay()
         {
-            if (_isTimeCheckMode)
+            if (_currentMode == Mode.TimeCheck)
             {
                 TimeCheckModeButton.BackgroundColor = Colors.LightGreen;
                 EncouragementModeButton.BackgroundColor = Colors.LightGray;
+                ChristmasModeButton.BackgroundColor = Colors.LightGray;
                 CurrentModeLabel.Text = "Current Mode: Time Check (announces time every 5 minutes)";
                 StartListeningButton.Text = "Speak Time";
             }
-            else
+            else if (_currentMode == Mode.Cycling)
             {
                 TimeCheckModeButton.BackgroundColor = Colors.LightGray;
                 EncouragementModeButton.BackgroundColor = Colors.LightBlue;
+                ChristmasModeButton.BackgroundColor = Colors.LightGray;
                 CurrentModeLabel.Text = "Current Mode: Cycling Encouragement (motivational messages every 10 minutes)";
                 StartListeningButton.Text = "Speak Encouragement";
+            }
+            else // Christmas
+            {
+                TimeCheckModeButton.BackgroundColor = Colors.LightGray;
+                EncouragementModeButton.BackgroundColor = Colors.LightGray;
+                ChristmasModeButton.BackgroundColor = Colors.Red;
+                CurrentModeLabel.Text = "Current Mode: Christmas Cheer (festive messages every 10 minutes)";
+                StartListeningButton.Text = "Speak Christmas Cheer";
             }
         }
 

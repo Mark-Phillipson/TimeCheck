@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">  <PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk;Microsoft.NET.Sdk.Razor">  <PropertyGroup>
     <TargetFrameworks>net9.0-android;net9.0-windows10.0.19041.0</TargetFrameworks>
     <!-- Android temporarily disabled due to file access issues - can be re-enabled later -->
     <!-- To re-enable: <TargetFrameworks>net9.0-android;net9.0-windows10.0.19041.0</TargetFrameworks> -->
