@@ -101,6 +101,8 @@
             <Entry x:Name="DeviceNameEntry" Placeholder="Device Name (optional)" />
             <Button Text="Save Companion Settings" Clicked="SaveCompanionSettings_Clicked" />
             <Button Text="Send Test Command" Clicked="SendTestCommand_Clicked" />
+            <Button x:Name="SpeakCompanionButton" Text="Speak Companion Command" Clicked="SpeakCompanionCommand_Clicked" />
+            <Button x:Name="ToggleCompanionServiceButton" Text="Start Companion Service" Clicked="ToggleCompanionService_Clicked" />
             <Label x:Name="AssistantStatusLabel" Text="Companion status" FontSize="12" TextColor="Gray" />
         </StackLayout>
     </Grid>

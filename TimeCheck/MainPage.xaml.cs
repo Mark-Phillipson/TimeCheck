@@ -469,6 +469,50 @@ namespace TimeCheck
             }
         }
 
+        private void SpeakCompanionCommand_Clicked(object sender, EventArgs e)
+        {
+#if ANDROID
+            var intent = new Android.Content.Intent(
+                Platform.CurrentActivity,
+                typeof(TimeCheck.Platforms.Android.SpeechCaptureActivity));
+            Platform.CurrentActivity?.StartActivity(intent);
+            AssistantStatusLabel.Text = "Speech capture launched.";
+#else
+            AssistantStatusLabel.Text = "Speech capture is only available on Android.";
+#endif
+        }
+
+        private bool _companionServiceRunning = false;
+
+        private void ToggleCompanionService_Clicked(object sender, EventArgs e)
+        {
+#if ANDROID
+            var context = Platform.CurrentActivity ?? Android.App.Application.Context;
+            var intent = new Android.Content.Intent(
+                context,
+                typeof(TimeCheck.Platforms.Android.CommandForegroundService));
+
+            if (!_companionServiceRunning)
+            {
+                intent.SetAction(TimeCheck.Platforms.Android.CommandForegroundService.ActionStart);
+                context.StartForegroundService(intent);
+                _companionServiceRunning = true;
+                ToggleCompanionServiceButton.Text = "Stop Companion Service";
+                AssistantStatusLabel.Text = "Companion service started.";
+            }
+            else
+            {
+                intent.SetAction(TimeCheck.Platforms.Android.CommandForegroundService.ActionStop);
+                context.StartService(intent);
+                _companionServiceRunning = false;
+                ToggleCompanionServiceButton.Text = "Start Companion Service";
+                AssistantStatusLabel.Text = "Companion service stopped.";
+            }
+#else
+            AssistantStatusLabel.Text = "Companion service is only available on Android.";
+#endif
+        }
+
 #if ANDROID
         private class TtsInitListener : Java.Lang.Object, Android.Speech.Tts.TextToSpeech.IOnInitListener
         {

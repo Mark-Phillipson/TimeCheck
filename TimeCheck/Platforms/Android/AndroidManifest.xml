@@ -1,8 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon" android:supportsRtl="true"></application>
+    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon" android:supportsRtl="true">
+        <!-- Foreground service: persistent companion notification -->
+        <service
+            android:name="timecheck.platforms.android.CommandForegroundService"
+            android:foregroundServiceType="microphone"
+            android:exported="false" />
+    </application>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Foreground service permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <!-- POST_NOTIFICATIONS required on Android 13+ to show the foreground notification -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

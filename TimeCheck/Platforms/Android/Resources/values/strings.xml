@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">TimeCheck Companion uses the Accessibility Service to perform navigation actions (Back, Home, Recents, Notifications) and scroll gestures on your behalf when instructed by the assistant.</string>
+</resources>
