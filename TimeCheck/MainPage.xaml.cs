@@ -10,7 +10,8 @@ using Android.Runtime;
 
 using Microsoft.Maui.Controls;
 using System;
-using System.Timers;
+using TimeCheck.Models;
+using TimeCheck.Services;
 
 namespace TimeCheck
 {    public partial class MainPage : ContentPage
@@ -21,6 +22,10 @@ namespace TimeCheck
 #endif        // Mode management
         private enum Mode { TimeCheck, Cycling }
         private Mode _currentMode = Mode.TimeCheck; // Start with time check mode
+
+        private readonly ISettingsService _settingsService;
+        private readonly IAssistantApiClient _assistantApiClient;
+
         private readonly List<string> _cyclingEncouragements = new List<string>
         {
             "Move it, you splendid sod — pedal like the sergeant's watching!",
@@ -125,11 +130,16 @@ namespace TimeCheck
         private readonly double _encMinMinutes = 1.0; // minimum random interval in minutes
         private readonly double _encMaxMinutes = 10.0; // maximum random interval in minutes
 
-        public MainPage()
+        public MainPage(ISettingsService settingsService, IAssistantApiClient assistantApiClient)
         {
+            _settingsService = settingsService;
+            _assistantApiClient = assistantApiClient;
+
             InitializeComponent();
             SizeChanged += MainPage_SizeChanged;
-        }        private void MainPage_SizeChanged(object? sender, EventArgs e)
+        }
+
+        private void MainPage_SizeChanged(object? sender, EventArgs e)
         {
             // Temporarily disable landscape hiding to ensure buttons are always visible
             // TODO: Re-enable landscape optimization later if needed
@@ -148,7 +158,9 @@ namespace TimeCheck
             // Adjust time label font size based on orientation
             bool isLandscape = Width > Height;
             TimeLabel.FontSize = isLandscape ? 70 : 120;
-        }protected override void OnAppearing()
+        }
+
+        protected override void OnAppearing()
         {
             base.OnAppearing();
             HelpLabel.Text = "Tap button to hear time or encouragement based on current mode.";
@@ -160,6 +172,13 @@ namespace TimeCheck
             
             UpdateModeDisplay(); // Initialize mode display
             StartMinuteTimer();
+
+            _settingsService.Load();
+            AssistantUrlEntry.Text = _settingsService.AssistantBaseUrl;
+            DeviceTokenEntry.Text = _settingsService.DeviceToken;
+            DeviceNameEntry.Text = _settingsService.DeviceName;
+            AssistantStatusLabel.Text = "Companion settings loaded.";
+
 #if ANDROID
             if (_tts == null)
             {
@@ -414,6 +433,39 @@ namespace TimeCheck
                 EncouragementModeButton.BackgroundColor = Colors.LightBlue;
                 CurrentModeLabel.Text = "Current Mode: Cycling Encouragement (motivational messages at random intervals)";
                 StartListeningButton.Text = "Speak Encouragement";
+            }
+        }
+
+        private async void SaveCompanionSettings_Clicked(object sender, EventArgs e)
+        {
+            _settingsService.AssistantBaseUrl = AssistantUrlEntry.Text?.Trim() ?? string.Empty;
+            _settingsService.DeviceToken = DeviceTokenEntry.Text?.Trim() ?? string.Empty;
+            _settingsService.DeviceName = DeviceNameEntry.Text?.Trim() ?? string.Empty;
+            _settingsService.Save();
+
+            AssistantStatusLabel.Text = "Companion settings saved.";
+            await DisplayAlert("Settings", "Companion settings saved.", "OK");
+        }
+
+        private async void SendTestCommand_Clicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var request = new CommandRequest
+                {
+                    Command = "open youtube",
+                    DeviceToken = _settingsService.DeviceToken,
+                    DeviceName = _settingsService.DeviceName
+                };
+
+                var result = await _assistantApiClient.SendCommandAsync(request);
+                AssistantStatusLabel.Text = $"Assistant response: {result.TextResponse}";
+                await DisplayAlert("Assistant Response", result.TextResponse, "OK");
+            }
+            catch (System.Exception ex)
+            {
+                AssistantStatusLabel.Text = $"Send failed: {ex.Message}";
+                await DisplayAlert("Error", ex.Message, "OK");
             }
         }
 

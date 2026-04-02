@@ -21,13 +21,15 @@ public static class MauiProgram
         // Register MainPage
         builder.Services.AddTransient<MainPage>();
 
+        // Companion configuration and APIs
+        builder.Services.AddSingleton<ISettingsService, SettingsService>();
+        builder.Services.AddSingleton<HttpClient>();
+        builder.Services.AddSingleton<IAssistantApiClient, AssistantApiClient>();
+
         // Add device-specific services used by the TimeCheck.Shared project
         builder.Services.AddSingleton<IFormFactor, FormFactor>();
 
-        builder.Services.AddMauiBlazorWebView();
-
 #if DEBUG
-        builder.Services.AddBlazorWebViewDeveloperTools();
         builder.Logging.AddDebug();
 #endif
 

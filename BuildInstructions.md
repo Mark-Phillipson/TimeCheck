@@ -2,8 +2,8 @@
 
 ## Current Status
 
-**✅ Windows**: Fully working with new dual-mode functionality and 100 cycling encouragement messages
-**⚠️ Android**: Currently disabled due to NuGet PackageSourceMapping configuration issues
+**✅ Windows**: Working on `net9.0-windows10.0.19041.0` with new dual-mode functionality and 100 cycling encouragement messages
+**✅ Android**: Build, install, and launch confirmed on device using adb and the generated launcher activity
 
 ## ✅ Successfully Implemented Features
 
@@ -43,8 +43,8 @@ cd "c:\Users\MPhil\source\repos\TimeCheck\TimeCheck\TimeCheck"
 
 # Build and run
 dotnet build TimeCheck.csproj
-dotnet run -f net10.0-windows10.0.19041.0
-dotnet run -f net10.0-windows10.0.19041.0 --project .\TimeCheck\TimeCheck\TimeCheck.csproj
+dotnet run -f net9.0-windows10.0.19041.0
+dotnet run -f net9.0-windows10.0.19041.0 --project .\TimeCheck\TimeCheck\TimeCheck.csproj
 ```
 
 ## 🚴‍♂️ How to Use Your New Features
@@ -71,50 +71,45 @@ dotnet build TimeCheck.csproj
 
 ### Windows (Working)
 ```bash
-dotnet run -f net10.0-windows10.0.19041.0
+dotnet run -f net9.0-windows10.0.19041.0
 ```
 
-### Android (Currently Disabled)
+### Android (Working)
 
-The Android target framework has been temporarily disabled due to NuGet PackageSourceMapping configuration issues that prevent proper package resolution for `Microsoft.NET.ILLink.Tasks`.
+Use this verified four-command sequence from `C:\Users\MPhil\source\repos\TimeCheck\TimeCheck\TimeCheck`:
 
-**To re-enable Android development:**
-
-1. **Option 1 (Recommended)**: Fix the global PackageSourceMapping configuration
-   - This is likely configured in your global NuGet.config or through Visual Studio settings
-   - You may need to update your .NET MAUI workloads using Visual Studio Installer instead of command line
-
-2. **Option 2**: Edit `TimeCheck.csproj` to include Android again:
-   ```xml
-   <TargetFrameworks>net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks>
-   ```
-
-**Previous Android commands (for when it's working):**
-```bash
-# Check connected devices
+```powershell
 adb devices
-adb pair 192.168.0.3:33451
+cd c:\Users\MPhil\source\repos\TimeCheck\TimeCheck\TimeCheck
+dotnet build -f net10.0-android -c Debug /t:Install /p:DeviceId=R3CW40BQS0M
+adb -s R3CW40BQS0M shell am start -n com.companyname.timecheck/crc64a0fd38e9f8dc419b.MainActivity
 
-# Build and run for Android
-dotnet run -f net10.0-android
-dotnet run -f net10.0-android --project .\TimeCheck\TimeCheck\TimeCheck.csproj
-dotnet build -f:net10.0-android -c:Debug /t:Install
-dotnet build -f net10.0-android && dotnet build -t:Run -f net10.0-android
+
 ```
+
+Notes:
+- The `XA1024` warning about `NuGet.config` is benign for this Android build.
+- `dotnet run -f net10.0-android --device ...` does not work in this setup because the Android runner does not accept `--device` here.
+- The launcher activity is the generated Android name `crc64a0fd38e9f8dc419b.MainActivity`, not `com.companyname.timecheck.MainActivity`.
+- If `adb devices` shows more than one device, keep using `-s R3CW40BQS0M` consistently (USB Debugging, authorized device).
 
 ## Note
 
 - Make sure you have the .NET MAUI workload installed
 - ✅ **Windows**: Currently working and ready for development
-- ⚠️ **Android**: Temporarily disabled - requires fixing NuGet PackageSourceMapping issues
+- ✅ **Android**: Build, install, and launch verified on device
 - ❌ **iOS/Mac Catalyst**: Removed from project (not needed per requirements)
+
+Windows note:
+- The Windows target currently runs on `net9.0-windows10.0.19041.0`.
+- The previous `net10.0-windows10.0.19041.0` target built but crashed on startup in `Microsoft.UI.Xaml.dll` on this machine.
 
 ## Summary
 
 We've successfully resolved the macOS/iOS warning messages by:
 1. ✅ Removed iOS and macOS Catalyst target frameworks from the project
 2. ✅ Removed unnecessary platform-specific configurations
-3. ✅ Got Windows build working
-4. ⚠️ Temporarily disabled Android due to NuGet configuration conflicts
+3. ✅ Got Windows running by switching the Windows target to .NET 9
+4. ✅ Verified Android build, install, and launch on device
 
-Your project now builds and runs successfully on Windows without any macOS-related warnings!
+Your project now builds and runs successfully on Windows and Android without any macOS-related warnings.
