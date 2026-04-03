@@ -27,22 +27,22 @@
         <Label x:Name="HelpLabel"
                Grid.Row="0"
                Text="Say 'what is the time'"
-               FontSize="18"
+               FontSize="15"
                LineBreakMode="WordWrap"
                MaxLines="2"
                HorizontalOptions="Center"
-               Margin="10,20,10,5" />
+               Margin="10,8,10,2" />
                
         <Label x:Name="TimeLabel"
                Grid.Row="1"
                Text="00:00"
-               FontSize="120"
+               FontSize="96"
                VerticalTextAlignment="Center"
                HorizontalTextAlignment="Center"
-               Margin="20"/>
+               Margin="10,0"/>
                
         <!-- Mode Toggle Buttons -->
-        <Grid Grid.Row="2" Margin="20,10">
+        <Grid Grid.Row="2" Margin="10,4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
@@ -68,42 +68,70 @@
         <Label x:Name="CurrentModeLabel"
                Grid.Row="3"
                Text="Current Mode: Time Check (announces time every 5 minutes)"
-               FontSize="14"
+               FontSize="13"
                HorizontalOptions="Center"
-               Margin="10,0,10,10"
+               Margin="10,2,10,4"
                TextColor="Gray"/>
         
         <Button x:Name="StartListeningButton"
                 Grid.Row="4"
                 Text="Speak Time"
-                FontSize="28"
-                Margin="20"
+                FontSize="24"
+                Margin="10,4"
                 Clicked="StartListeningButton_Clicked"/>
                 
         <Button x:Name="MinimizeAppButton"
                 Grid.Row="5"
                 Text="Minimize App"
-                FontSize="28"
-                Margin="20"
+                FontSize="24"
+                Margin="10,4"
                 Clicked="MinimizeAppButton_Clicked"/>
                 
         <Button x:Name="CloseAppButton"
                 Grid.Row="6"
-                Text="Close App Completely"
-                FontSize="28"
-                Margin="20"
+                Text="Close App"
+                FontSize="24"
+                Margin="10,4"
                 Clicked="CloseAppButton_Clicked"/>
 
-        <StackLayout Grid.Row="7" Margin="20" Spacing="8" BackgroundColor="#f0f0f0" Padding="10">
-            <Label Text="Companion Assistant Settings" FontAttributes="Bold" FontSize="18" />
-            <Entry x:Name="AssistantUrlEntry" Placeholder="Assistant Base URL (http://192.168.0.100:5000)" />
-            <Entry x:Name="DeviceTokenEntry" Placeholder="Device Token" />
-            <Entry x:Name="DeviceNameEntry" Placeholder="Device Name (optional)" />
-            <Button Text="Save Companion Settings" Clicked="SaveCompanionSettings_Clicked" />
-            <Button Text="Send Test Command" Clicked="SendTestCommand_Clicked" />
-            <Button x:Name="SpeakCompanionButton" Text="Speak Companion Command" Clicked="SpeakCompanionCommand_Clicked" />
-            <Button x:Name="ToggleCompanionServiceButton" Text="Start Companion Service" Clicked="ToggleCompanionService_Clicked" />
-            <Label x:Name="AssistantStatusLabel" Text="Companion status" FontSize="12" TextColor="Gray" />
+        <!-- Companion Settings Panel (collapsible) -->
+        <StackLayout Grid.Row="7" Margin="20,10,20,10" Spacing="0" BackgroundColor="#f0f0f0">
+
+            <!-- Header / toggle row -->
+            <Grid BackgroundColor="#2b0b98" Padding="10,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Label Grid.Column="0"
+                       Text="Companion Assistant"
+                       FontAttributes="Bold"
+                       FontSize="16"
+                       TextColor="White"
+                       VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        x:Name="ToggleSettingsButton"
+                        Text="▲ Hide"
+                        FontSize="13"
+                        Padding="8,4"
+                        HeightRequest="34"
+                        BackgroundColor="#512bdf"
+                        TextColor="White"
+                        Clicked="ToggleSettings_Clicked" />
+            </Grid>
+
+            <!-- Collapsible body -->
+            <StackLayout x:Name="CompanionSettingsBody" Padding="10" Spacing="8">
+                <Entry x:Name="AssistantUrlEntry" Placeholder="Assistant Base URL (http://192.168.0.100:5000)" />
+                <Entry x:Name="DeviceTokenEntry" Placeholder="Device Token" />
+                <Entry x:Name="DeviceNameEntry" Placeholder="Device Name (optional)" />
+                <Button Text="Save Companion Settings" Clicked="SaveCompanionSettings_Clicked" />
+                <Button x:Name="SendTestCommandButton" Text="Send Test Command" Clicked="SendTestCommand_Clicked" IsEnabled="False" />
+                <Button x:Name="SpeakCompanionButton" Text="Speak Companion Command" Clicked="SpeakCompanionCommand_Clicked" IsEnabled="False" />
+                <Button x:Name="ToggleCompanionServiceButton" Text="Start Companion Service" Clicked="ToggleCompanionService_Clicked" />
+                <Label x:Name="AssistantStatusLabel" Text="Companion status" FontSize="12" TextColor="Gray" />
+            </StackLayout>
+
         </StackLayout>
     </Grid>
 

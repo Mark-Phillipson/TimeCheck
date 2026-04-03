@@ -81,9 +81,12 @@ Use this verified four-command sequence from `C:\Users\MPhil\source\repos\TimeCh
 ```powershell
 adb devices
 cd c:\Users\MPhil\source\repos\TimeCheck\TimeCheck\TimeCheck
+
 dotnet build -f net10.0-android -c Debug /t:Install /p:DeviceId=R3CW40BQS0M
+
 adb -s R3CW40BQS0M shell am start -n com.companyname.timecheck/crc64a0fd38e9f8dc419b.MainActivity
 
+Invoke-WebRequest -Uri "http://192.168.0.8 Took the time is to window:5111/api/command" -Method Post -ContentType "application/json" -Body '{"command":"launch google chrome","deviceToken":"U3cR3t-7gH1x-7Ro8!"}' -TimeoutSec 5
 
 ```
 

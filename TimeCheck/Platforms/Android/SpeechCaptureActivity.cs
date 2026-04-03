@@ -40,20 +40,22 @@ public class SpeechCaptureActivity : global::Android.App.Activity
         }
     }
 
-    protected override async void OnActivityResult(int requestCode, global::Android.App.Result resultCode, Intent? data)
+    protected override void OnActivityResult(int requestCode, global::Android.App.Result resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
 
+        string? spokenText = null;
         if (requestCode == SpeechRequestCode && resultCode == global::Android.App.Result.Ok)
         {
             var results = data?.GetStringArrayListExtra(RecognizerIntent.ExtraResults);
-            var spokenText = results?.Count > 0 ? results[0] : null;
-
-            if (!string.IsNullOrWhiteSpace(spokenText))
-                await SendCommandAsync(spokenText);
+            spokenText = results?.Count > 0 ? results[0] : null;
         }
 
+        // Dismiss the transparent activity immediately so the app remains responsive
         Finish();
+
+        if (!string.IsNullOrWhiteSpace(spokenText))
+            _ = SendCommandAsync(spokenText);
     }
 
     private async Task SendCommandAsync(string command)
@@ -91,7 +93,7 @@ public class SpeechCaptureActivity : global::Android.App.Activity
             var response = await apiClient.SendCommandAsync(request);
             ShowToast(response.TextResponse);
 
-            if (executor != null)
+            if (executor != null && response.Actions?.Count > 0)
             {
                 foreach (var action in response.Actions)
                     await executor.ExecuteAsync(action);

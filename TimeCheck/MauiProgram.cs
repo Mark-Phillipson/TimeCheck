@@ -26,7 +26,7 @@ public static class MauiProgram
 
         // Companion configuration and APIs
         builder.Services.AddSingleton<ISettingsService, SettingsService>();
-        builder.Services.AddSingleton<HttpClient>();
+        builder.Services.AddSingleton(_ => new HttpClient { Timeout = TimeSpan.FromSeconds(15) });
         builder.Services.AddSingleton<IAssistantApiClient, AssistantApiClient>();
 
         // Add device-specific services used by the TimeCheck.Shared project

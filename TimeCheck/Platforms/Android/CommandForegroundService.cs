@@ -48,7 +48,16 @@ public class CommandForegroundService : Service
             .AddAction(Resource.Mipmap.appicon, "Speak Command", speakPendingIntent)
             .Build();
 
-        StartForeground(NotificationId, notification);
+        // Android 10+ (API 29) requires passing the service type to StartForeground
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.Q)
+        {
+            StartForeground(NotificationId, notification,
+                global::Android.Content.PM.ForegroundService.TypeMicrophone);
+        }
+        else
+        {
+            StartForeground(NotificationId, notification);
+        }
 
         return StartCommandResult.Sticky;
     }

@@ -51,6 +51,27 @@ public class AndroidActionExecutor : IActionExecutor
         }
     }
 
+    // Well-known app name aliases → package name, for apps whose label doesn't match common speech
+    private static readonly Dictionary<string, string> KnownPackages = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["chrome"] = "com.android.chrome",
+        ["google chrome"] = "com.android.chrome",
+        ["youtube"] = "com.google.android.youtube",
+        ["maps"] = "com.google.android.apps.maps",
+        ["google maps"] = "com.google.android.apps.maps",
+        ["gmail"] = "com.google.android.gm",
+        ["photos"] = "com.google.android.apps.photos",
+        ["google photos"] = "com.google.android.apps.photos",
+        ["settings"] = "com.android.settings",
+        ["camera"] = "com.sec.android.app.camera",
+        ["messages"] = "com.google.android.apps.messaging",
+        ["phone"] = "com.samsung.android.dialer",
+        ["spotify"] = "com.spotify.music",
+        ["netflix"] = "com.netflix.mediaclient",
+        ["amazon music"] = "com.amazon.mp3",
+        ["whatsapp"] = "com.whatsapp",
+    };
+
     private static ActionExecutionResult OpenApp(DeviceAction action)
     {
         var name = GetParam(action, "name");
@@ -61,11 +82,25 @@ public class AndroidActionExecutor : IActionExecutor
         var pm = context.PackageManager;
         if (pm == null) return Fail("PackageManager unavailable.");
 
+        // 1. Try known package map first
+        if (KnownPackages.TryGetValue(name, out var knownPackage))
+        {
+            var knownIntent = pm.GetLaunchIntentForPackage(knownPackage);
+            if (knownIntent != null)
+            {
+                knownIntent.SetFlags(ActivityFlags.NewTask);
+                context.StartActivity(knownIntent);
+                return new ActionExecutionResult { Success = true };
+            }
+        }
+
+        // 2. Fuzzy label search — match if label contains search term OR search term contains label
         var packages = pm.GetInstalledApplications(global::Android.Content.PM.PackageInfoFlags.MetaData);
         foreach (var pkg in packages)
         {
             var label = pm.GetApplicationLabel(pkg)?.ToString() ?? string.Empty;
-            if (label.Contains(name, StringComparison.OrdinalIgnoreCase))
+            if (label.Contains(name, StringComparison.OrdinalIgnoreCase) ||
+                name.Contains(label, StringComparison.OrdinalIgnoreCase))
             {
                 var launchIntent = pm.GetLaunchIntentForPackage(pkg.PackageName ?? string.Empty);
                 if (launchIntent != null)

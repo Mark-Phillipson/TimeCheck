@@ -157,7 +157,7 @@ namespace TimeCheck
             
             // Adjust time label font size based on orientation
             bool isLandscape = Width > Height;
-            TimeLabel.FontSize = isLandscape ? 70 : 120;
+            TimeLabel.FontSize = isLandscape ? 60 : 96;
         }
 
         protected override void OnAppearing()
@@ -177,7 +177,20 @@ namespace TimeCheck
             AssistantUrlEntry.Text = _settingsService.AssistantBaseUrl;
             DeviceTokenEntry.Text = _settingsService.DeviceToken;
             DeviceNameEntry.Text = _settingsService.DeviceName;
-            AssistantStatusLabel.Text = "Companion settings loaded.";
+
+            // Auto-start the companion service if settings are configured
+            if (!_companionServiceRunning
+                && !string.IsNullOrWhiteSpace(_settingsService.AssistantBaseUrl)
+                && !string.IsNullOrWhiteSpace(_settingsService.DeviceToken))
+            {
+                _ = StartCompanionServiceAsync();
+            }
+            else
+            {
+                AssistantStatusLabel.Text = _companionServiceRunning
+                    ? "Companion service running."
+                    : "Enter URL and token, then save to auto-start service.";
+            }
 
 #if ANDROID
             if (_tts == null)
@@ -484,33 +497,58 @@ namespace TimeCheck
 
         private bool _companionServiceRunning = false;
 
-        private void ToggleCompanionService_Clicked(object sender, EventArgs e)
+        private async void ToggleCompanionService_Clicked(object sender, EventArgs e)
+        {
+            if (!_companionServiceRunning)
+                await StartCompanionServiceAsync();
+            else
+                StopCompanionService();
+        }
+
+        private async Task StartCompanionServiceAsync()
+        {
+#if ANDROID
+            var status = await Permissions.CheckStatusAsync<Permissions.Microphone>();
+            if (status != PermissionStatus.Granted)
+            {
+                status = await Permissions.RequestAsync<Permissions.Microphone>();
+                if (status != PermissionStatus.Granted)
+                {
+                    AssistantStatusLabel.Text = "Microphone permission denied — cannot start service.";
+                    return;
+                }
+            }
+
+            var context = Platform.CurrentActivity ?? Android.App.Application.Context;
+            var intent = new Android.Content.Intent(context, typeof(TimeCheck.Platforms.Android.CommandForegroundService));
+            intent.SetAction(TimeCheck.Platforms.Android.CommandForegroundService.ActionStart);
+            context.StartForegroundService(intent);
+            _companionServiceRunning = true;
+            ToggleCompanionServiceButton.Text = "Stop Companion Service";
+            ToggleCompanionServiceButton.BackgroundColor = Colors.DarkRed;
+            SendTestCommandButton.IsEnabled = true;
+            SpeakCompanionButton.IsEnabled = true;
+            AssistantStatusLabel.Text = "Companion service running. Ready for voice commands.";
+#else
+            AssistantStatusLabel.Text = "Companion service is only available on Android.";
+            await Task.CompletedTask;
+#endif
+        }
+
+        private void StopCompanionService()
         {
 #if ANDROID
             var context = Platform.CurrentActivity ?? Android.App.Application.Context;
-            var intent = new Android.Content.Intent(
-                context,
-                typeof(TimeCheck.Platforms.Android.CommandForegroundService));
-
-            if (!_companionServiceRunning)
-            {
-                intent.SetAction(TimeCheck.Platforms.Android.CommandForegroundService.ActionStart);
-                context.StartForegroundService(intent);
-                _companionServiceRunning = true;
-                ToggleCompanionServiceButton.Text = "Stop Companion Service";
-                AssistantStatusLabel.Text = "Companion service started.";
-            }
-            else
-            {
-                intent.SetAction(TimeCheck.Platforms.Android.CommandForegroundService.ActionStop);
-                context.StartService(intent);
-                _companionServiceRunning = false;
-                ToggleCompanionServiceButton.Text = "Start Companion Service";
-                AssistantStatusLabel.Text = "Companion service stopped.";
-            }
-#else
-            AssistantStatusLabel.Text = "Companion service is only available on Android.";
+            var intent = new Android.Content.Intent(context, typeof(TimeCheck.Platforms.Android.CommandForegroundService));
+            intent.SetAction(TimeCheck.Platforms.Android.CommandForegroundService.ActionStop);
+            context.StartService(intent);
 #endif
+            _companionServiceRunning = false;
+            ToggleCompanionServiceButton.Text = "Start Companion Service";
+            ToggleCompanionServiceButton.BackgroundColor = Colors.MediumPurple;
+            SendTestCommandButton.IsEnabled = false;
+            SpeakCompanionButton.IsEnabled = false;
+            AssistantStatusLabel.Text = "Companion service stopped.";
         }
 
 #if ANDROID
@@ -524,6 +562,13 @@ namespace TimeCheck
             }
         }
 #endif
+
+        private void ToggleSettings_Clicked(object sender, EventArgs e)
+        {
+            var isVisible = !CompanionSettingsBody.IsVisible;
+            CompanionSettingsBody.IsVisible = isVisible;
+            ToggleSettingsButton.Text = isVisible ? "▲ Hide" : "▼ Show";
+        }
 
         private void MinimizeAppButton_Clicked(object sender, EventArgs e)
         {
