@@ -1,9 +1,33 @@
 # Plan: Android Companion Features in TimeCheck (MAUI MVP)
 
 **Date:** April 2, 2026  
-**Status:** Planning  
+**Updated:** April 3, 2026  
+**Status:** Phase 0–2 complete — Testing in progress  
 **Branch for implementation:** `feature/maui-android-companion`  
 **Parent research:** `research android mobile interaction.md`
+
+### Implementation Status
+
+| Phase | Task | Status |
+|---|---|---|
+| 0 | Android build confirmed (`net10.0-android`) | ✅ Done |
+| 0 | Companion settings UI (URL, token, device name) | ✅ Done |
+| 0 | Shared models (`CommandRequest`, `CommandResponse`, `DeviceAction`, `ActionExecutionResult`) | ✅ Done |
+| 0 | `AssistantApiClient` + `IAssistantApiClient` | ✅ Done |
+| 0 | `SettingsService` + `ISettingsService` (MAUI Preferences) | ✅ Done |
+| 1 | `ICommandCaptureService` interface | ✅ Done |
+| 1 | `SpeechCaptureActivity` — speech dialog → API → actions | ✅ Done |
+| 1 | `CommandForegroundService` — persistent notification with Speak Command action | ✅ Done |
+| 1 | `CommandTileService` — Quick Settings tile | ✅ Done |
+| 1 | Speak Command button + service toggle in `MainPage` | ✅ Done |
+| 2 | `IActionExecutor` + `IAccessibilityCommandService` interfaces | ✅ Done |
+| 2 | `AndroidActionExecutor` — `open_app`, `open_url`, `navigate`, `scroll`, `media` | ✅ Done |
+| 2 | `CompanionAccessibilityService` — global nav + gesture scroll | ✅ Done |
+| 2 | `AccessibilityCommandProxy` — DI bridge to live accessibility service | ✅ Done |
+| 2 | Android DI wiring in `MauiProgram.cs` | ✅ Done |
+| 2 | `AndroidManifest.xml` updated (permissions, service declarations) | ✅ Done |
+| 3 | End-to-end testing on device | 🔲 In progress |
+| 3 | Assistant repo `/api/command` endpoint validation | 🔲 Pending |
 
 ---
 
