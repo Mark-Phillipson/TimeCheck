@@ -71,6 +71,21 @@ namespace TimeCheck.Services
         {
             try
             {
+                // If the file was packaged with the app (copied to the output), prefer that first
+                var packagedPath = Path.Combine(AppContext.BaseDirectory ?? string.Empty, FileName);
+                if (File.Exists(packagedPath))
+                {
+                    try
+                    {
+                        var jsonPack = File.ReadAllText(packagedPath);
+                        _cache = JsonSerializer.Deserialize<List<LaunchRecord>>(jsonPack) ?? new List<LaunchRecord>();
+                        EnsureAliases();
+                        try { System.Diagnostics.Debug.WriteLine($"LaunchService: loaded packaged {_cache.Count} entries (packaged)"); } catch { }
+                        return;
+                    }
+                    catch { /* fall through to other locations */ }
+                }
+
                 // If a development JSON export exists, prefer that (convenient for local testing)
                 var externalJson = ExternalJsonPath;
                 if (File.Exists(externalJson))
@@ -79,6 +94,8 @@ namespace TimeCheck.Services
                     {
                         var jsonExt = File.ReadAllText(externalJson);
                         _cache = JsonSerializer.Deserialize<List<LaunchRecord>>(jsonExt) ?? new List<LaunchRecord>();
+                        EnsureAliases();
+                        try { System.Diagnostics.Debug.WriteLine($"LaunchService: loaded { _cache.Count} entries (external)"); } catch { }
                         return;
                     }
                     catch { /* fall through to internal cache */ }
@@ -100,6 +117,14 @@ namespace TimeCheck.Services
                 var json = File.ReadAllText(_filePath);
                 _cache = JsonSerializer.Deserialize<List<LaunchRecord>>(json) ?? new List<LaunchRecord>();
                 EnsureAliases();
+                try
+                {
+                    var names = string.Join(", ", _cache.Take(5).Select(x => x.Name));
+                    System.Diagnostics.Debug.WriteLine($"LaunchService: loaded {_cache.Count} entries; samples: {names}");
+                    var hasSql = _cache.Any(x => (x.Name ?? string.Empty).IndexOf("sql server cheat", StringComparison.OrdinalIgnoreCase) >= 0 || (x.VoiceKey ?? string.Empty).IndexOf("sql server cheat", StringComparison.OrdinalIgnoreCase) >= 0);
+                    System.Diagnostics.Debug.WriteLine($"LaunchService: contains SQL Server cheat entry: {hasSql}");
+                }
+                catch { }
             }
             catch
             {
