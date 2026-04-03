@@ -31,6 +31,8 @@ public static class MauiProgram
 
         // Add device-specific services used by the TimeCheck.Shared project
         builder.Services.AddSingleton<IFormFactor, FormFactor>();
+        // Launch service (local cache + optional sync)
+        builder.Services.AddSingleton<ILaunchService, LaunchService>();
 
 #if ANDROID
         // Android companion services

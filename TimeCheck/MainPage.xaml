@@ -144,6 +144,7 @@
                 </Grid>
                 <Entry x:Name="DeviceNameEntry" Placeholder="Device Name (optional)" />
                 <Button Text="Save Companion Settings" Clicked="SaveCompanionSettings_Clicked" />
+                <Button x:Name="SyncLaunchesButton" Text="Sync Launches (from Companion)" Clicked="SyncLaunchesButton_Clicked" />
                 <Button x:Name="SendTestCommandButton" Text="Speak Local Command" Clicked="SendTestCommand_Clicked" IsEnabled="False" />
                 <Button x:Name="SpeakCompanionButton" Text="Speak Companion Command" Clicked="SpeakCompanionCommand_Clicked" IsEnabled="False" />
                 <Button x:Name="ToggleCompanionServiceButton" Text="Start Companion Service" Clicked="ToggleCompanionService_Clicked" />

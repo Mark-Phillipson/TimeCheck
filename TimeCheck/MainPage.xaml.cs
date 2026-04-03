@@ -25,6 +25,7 @@ namespace TimeCheck
 
         private readonly ISettingsService _settingsService;
         private readonly IAssistantApiClient _assistantApiClient;
+        private readonly ILaunchService _launchService;
 
         private readonly List<string> _cyclingEncouragements = new List<string>
         {
@@ -130,10 +131,11 @@ namespace TimeCheck
         private readonly double _encMinMinutes = 1.0; // minimum random interval in minutes
         private readonly double _encMaxMinutes = 10.0; // maximum random interval in minutes
 
-        public MainPage(ISettingsService settingsService, IAssistantApiClient assistantApiClient)
+        public MainPage(ISettingsService settingsService, IAssistantApiClient assistantApiClient, ILaunchService launchService)
         {
             _settingsService = settingsService;
             _assistantApiClient = assistantApiClient;
+            _launchService = launchService;
 
             InitializeComponent();
             SizeChanged += MainPage_SizeChanged;
@@ -488,6 +490,31 @@ namespace TimeCheck
 
             AssistantStatusLabel.Text = "Companion settings saved.";
             await DisplayAlert("Settings", "Companion settings saved.", "OK");
+        }
+
+        private async void SyncLaunchesButton_Clicked(object sender, EventArgs e)
+        {
+            var baseUrl = AssistantUrlEntry.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                await DisplayAlert("Sync Launches", "Set Assistant Base URL first.", "OK");
+                return;
+            }
+
+            var token = DeviceTokenEntry.Text?.Trim();
+            var apiUrl = baseUrl.TrimEnd('/') + "/api/launches/local";
+            AssistantStatusLabel.Text = "Syncing launches...";
+            try
+            {
+                var ok = await _launchService.SyncFromServerAsync(apiUrl, string.IsNullOrWhiteSpace(token) ? null : token);
+                AssistantStatusLabel.Text = ok ? "Launches synced." : "Sync failed.";
+                await DisplayAlert("Sync Launches", ok ? "Launches updated." : "Failed to sync launches.", "OK");
+            }
+            catch (System.Exception ex)
+            {
+                AssistantStatusLabel.Text = "Sync failed.";
+                await DisplayAlert("Sync Launches", "Error: " + ex.Message, "OK");
+            }
         }
 
         private void SendTestCommand_Clicked(object sender, EventArgs e)

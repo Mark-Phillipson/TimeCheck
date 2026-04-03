@@ -6,6 +6,8 @@ using TimeCheck.Models;
 using TimeCheck.Services;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace TimeCheck.Platforms.Android;
 
@@ -65,6 +67,7 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
 
         var services = IPlatformApplication.Current?.Services;
         var executor = services?.GetService<IActionExecutor>();
+        var launchService = services?.GetService<ILaunchService>();
 
         if (executor == null)
         {
@@ -77,59 +80,84 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
 
         DeviceAction? action = null;
 
-        // Open URL (explicit)
-        if (lower.StartsWith("open http") || lower.StartsWith("open https") || lower.StartsWith("go to ") || lower.StartsWith("open www."))
+        // FIRST: allow local launches configured in the LaunchService to override generic handling
+        if (launchService != null)
         {
-            var url = text;
-            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                url = "https://" + url.Replace("open ", "").Replace("go to ", "");
-
-            action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = url } };
-        }
-        // Open app
-        else if (lower.StartsWith("open ") || lower.StartsWith("launch ") || lower.StartsWith("start "))
-        {
-            var name = text.Substring(text.IndexOf(' ') + 1).Trim();
-            action = new DeviceAction { Type = "device.open_app", Params = new Dictionary<string, string> { ["name"] = name } };
-        }
-        // Media controls
-        else if (lower.Contains("play") || lower.Contains("pause") || lower.Contains("next") || lower.Contains("previous") || lower.Contains("skip"))
-        {
-            string media = "";
-            if (lower.Contains("play") && !lower.Contains("pause")) media = "play";
-            else if (lower.Contains("pause")) media = "pause";
-            else if (lower.Contains("next") || lower.Contains("skip")) media = "next";
-            else if (lower.Contains("previous") || lower.Contains("back")) media = "previous";
-
-            if (!string.IsNullOrEmpty(media))
-                action = new DeviceAction { Type = "device.media", Params = new Dictionary<string, string> { ["action"] = media } };
-        }
-        // Scroll
-        else if (lower.StartsWith("scroll ") || lower.StartsWith("swipe "))
-        {
-            var parts = lower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length >= 2)
+            try
             {
-                var dir = parts[1];
-                action = new DeviceAction { Type = "device.scroll", Params = new Dictionary<string, string> { ["direction"] = dir } };
+                var match = await launchService.FindBestMatchAsync(recognisedText);
+                if (match != null)
+                {
+                    global::Android.Util.Log.Debug("TimeCheck", $"Local launch matched: {match.Name} ({match.VoiceKey})");
+                    ShowToast($"Opening {match.Name}...");
+                    action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = match.Url } };
+                }
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Debug("TimeCheck", $"LaunchService error: {ex.Message}");
             }
         }
-        // Navigate
-        else if (lower.Contains("go back") || lower == "back")
+
+        // If no local match, continue with generic heuristics
+        if (action == null)
         {
-            action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "back" } };
-        }
-        else if (lower.Contains("go home") || lower == "home")
-        {
-            action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "home" } };
-        }
-        else if (lower.Contains("recents") || lower.Contains("recent apps") || lower.Contains("show recent"))
-        {
-            action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "recents" } };
-        }
-        else if (lower.Contains("notification") || lower.Contains("show notifications") || lower.Contains("open notifications"))
-        {
-            action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "notifications" } };
+            // Open URL (explicit)
+            if (lower.StartsWith("open http") || lower.StartsWith("open https") || lower.StartsWith("go to ") || lower.StartsWith("open www."))
+            {
+                var url = text;
+                if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                    url = "https://" + url.Replace("open ", "").Replace("go to ", "");
+
+                action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = url } };
+            }
+            // Open app
+            else if (lower.StartsWith("open ") || lower.StartsWith("launch ") || lower.StartsWith("start "))
+            {
+                var name = text.Substring(text.IndexOf(' ') + 1).Trim();
+                action = new DeviceAction { Type = "device.open_app", Params = new Dictionary<string, string> { ["name"] = name } };
+            }
+            
+            // Media controls
+            else if (lower.Contains("play") || lower.Contains("pause") || lower.Contains("next") || lower.Contains("previous") || lower.Contains("skip"))
+            {
+                string media = "";
+                if (lower.Contains("play") && !lower.Contains("pause")) media = "play";
+                else if (lower.Contains("pause")) media = "pause";
+                else if (lower.Contains("next") || lower.Contains("skip")) media = "next";
+                else if (lower.Contains("previous") || lower.Contains("back")) media = "previous";
+
+                if (!string.IsNullOrEmpty(media))
+                    action = new DeviceAction { Type = "device.media", Params = new Dictionary<string, string> { ["action"] = media } };
+            }
+            // Scroll
+            else if (lower.StartsWith("scroll ") || lower.StartsWith("swipe "))
+            {
+                var parts = lower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2)
+                {
+                    var dir = parts[1];
+                    action = new DeviceAction { Type = "device.scroll", Params = new Dictionary<string, string> { ["direction"] = dir } };
+                }
+            }
+            // Navigate
+            else if (lower.Contains("go back") || lower == "back")
+            {
+                action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "back" } };
+            }
+            else if (lower.Contains("go home") || lower == "home")
+            {
+                action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "home" } };
+            }
+            else if (lower.Contains("recents") || lower.Contains("recent apps") || lower.Contains("show recent"))
+            {
+                action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "recents" } };
+            }
+            else if (lower.Contains("notification") || lower.Contains("show notifications") || lower.Contains("open notifications"))
+            {
+                action = new DeviceAction { Type = "device.navigate", Params = new Dictionary<string, string> { ["action"] = "notifications" } };
+            }
+
         }
 
         if (action == null)
