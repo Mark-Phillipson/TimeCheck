@@ -177,6 +177,20 @@ namespace TimeCheck
             AssistantUrlEntry.Text = _settingsService.AssistantBaseUrl;
             DeviceTokenEntry.Text = _settingsService.DeviceToken;
             DeviceNameEntry.Text = _settingsService.DeviceName;
+            // Initialize Quiet mode switch from settings
+            try
+            {
+                QuietModeSwitch.IsToggled = _settingsService.IsQuiet;
+                if (_settingsService.IsQuiet)
+                {
+                    // Indicate quiet mode in the mode label without duplicating text
+                        CurrentModeLabel.Text += " (Quiet)";
+                }
+            }
+            catch
+            {
+                // QuietModeSwitch may not be available on some platforms - ignore
+            }
 
             // Auto-start the companion service if settings are configured
             if (!_companionServiceRunning
@@ -236,7 +250,7 @@ namespace TimeCheck
             // Time Check Mode: Say the time every 5 minutes (3 times)
             Dispatcher.StartTimer(TimeSpan.FromMinutes(5), () =>
             {
-                if (_currentMode == Mode.TimeCheck)
+                if (_currentMode == Mode.TimeCheck && !_settingsService.IsQuiet)
                 {
                     SayTime();
                 }
@@ -244,11 +258,24 @@ namespace TimeCheck
             });
 
             // Encouragement Mode: schedule encouragements at random intervals
-            ScheduleNextEncouragement();
+            // Only schedule encouragements if not in Quiet mode
+            if (!_settingsService.IsQuiet)
+            {
+                ScheduleNextEncouragement();
+            }
         }
 
         private void ScheduleNextEncouragement()
         {
+            // Don't schedule when Quiet mode is enabled
+            if (_settingsService.IsQuiet)
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    HelpLabel.Text = "Quiet mode enabled — automatic encouragements paused.";
+                });
+                return;
+            }
             // Pick a random delay between min and max minutes (fractional allowed)
             double minutes = _random.NextDouble() * (_encMaxMinutes - _encMinMinutes) + _encMinMinutes;
             var delay = TimeSpan.FromMinutes(minutes);
@@ -261,12 +288,15 @@ namespace TimeCheck
 
             Dispatcher.StartTimer(delay, () =>
             {
-                if (_currentMode == Mode.Cycling)
+                if (_currentMode == Mode.Cycling && !_settingsService.IsQuiet)
                 {
                     SayEncouragement();
                 }
-                // Schedule the following encouragement (recursive scheduling)
-                ScheduleNextEncouragement();
+                // Schedule the following encouragement (recursive scheduling) if not quiet
+                if (!_settingsService.IsQuiet)
+                {
+                    ScheduleNextEncouragement();
+                }
                 return false; // don't repeat this timer — we've rescheduled
             });
         }
@@ -566,6 +596,28 @@ namespace TimeCheck
             // Toggle the masking state for the device token entry and update button text
             DeviceTokenEntry.IsPassword = !DeviceTokenEntry.IsPassword;
             ToggleDeviceTokenButton.Text = DeviceTokenEntry.IsPassword ? "Show" : "Hide";
+        }
+
+        private void QuietModeSwitch_Toggled(object sender, ToggledEventArgs e)
+        {
+            _settingsService.IsQuiet = e.Value;
+            _settingsService.Save();
+
+            if (_settingsService.IsQuiet)
+            {
+                CurrentModeLabel.Text += " (Quiet)";
+                HelpLabel.Text = "Quiet mode enabled — automatic announcements paused.";
+            }
+            else
+            {
+                UpdateModeDisplay();
+                HelpLabel.Text = "Quiet mode disabled.";
+                // Resume scheduling encouragements if in cycling mode
+                if (_currentMode == Mode.Cycling)
+                {
+                    ScheduleNextEncouragement();
+                }
+            }
         }
 
         private void MinimizeAppButton_Clicked(object sender, EventArgs e)

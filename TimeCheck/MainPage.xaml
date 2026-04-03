@@ -22,6 +22,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         
         <Label x:Name="HelpLabel"
@@ -73,29 +74,39 @@
                Margin="10,2,10,4"
                TextColor="Gray"/>
         
+        <!-- Quiet mode toggle -->
+        <Grid Grid.Row="4" Margin="10,4">
+            <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Label Text="Quiet mode" Grid.Column="0" VerticalOptions="Center" />
+            <Switch x:Name="QuietModeSwitch" Grid.Column="1" Toggled="QuietModeSwitch_Toggled" />
+        </Grid>
+
         <Button x:Name="StartListeningButton"
-                Grid.Row="4"
+            Grid.Row="5"
                 Text="Speak Time"
                 FontSize="24"
                 Margin="10,4"
                 Clicked="StartListeningButton_Clicked"/>
                 
         <Button x:Name="MinimizeAppButton"
-                Grid.Row="5"
+            Grid.Row="6"
                 Text="Minimize App"
                 FontSize="24"
                 Margin="10,4"
                 Clicked="MinimizeAppButton_Clicked"/>
                 
         <Button x:Name="CloseAppButton"
-                Grid.Row="6"
+            Grid.Row="7"
                 Text="Close App"
                 FontSize="24"
                 Margin="10,4"
                 Clicked="CloseAppButton_Clicked"/>
 
         <!-- Companion Settings Panel (collapsible) -->
-        <StackLayout Grid.Row="7" Margin="20,10,20,10" Spacing="0" BackgroundColor="#f0f0f0">
+        <StackLayout Grid.Row="8" Margin="20,10,20,10" Spacing="0" BackgroundColor="#f0f0f0">
 
             <!-- Header / toggle row -->
             <Grid BackgroundColor="#2b0b98" Padding="10,8">
