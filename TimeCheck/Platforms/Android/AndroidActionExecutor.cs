@@ -9,6 +9,7 @@ using Android.Media;
 using Android.Views;
 using Android.Util;
 using Android.Widget;
+using System.Text;
 using Microsoft.Maui.ApplicationModel;
 using TimeCheck.Models;
 using TimeCheck.Services;
@@ -101,48 +102,126 @@ namespace TimeCheck.Platforms.Android
 
             VerboseToast(ctx, "OpenApp: looking for '" + name + "'");
 
-            // known package
-            string known;
-            if (KnownPackages.TryGetValue(name, out known) && !string.IsNullOrEmpty(known))
+            // normalize helper for more robust matching
+            static string Normalize(string s)
             {
-                try
+                if (string.IsNullOrWhiteSpace(s)) return string.Empty;
+                var sb = new StringBuilder();
+                foreach (var c in s.ToLowerInvariant())
                 {
-                    Intent launch = pm.GetLaunchIntentForPackage(known);
-                    if (launch != null)
-                    {
-                        launch.SetFlags(ActivityFlags.NewTask);
-                        ctx.StartActivity(launch);
-                        return new ActionExecutionResult { Success = true };
-                    }
+                    if (char.IsLetterOrDigit(c)) sb.Append(c);
+                }
+                return sb.ToString();
+            }
 
-                    // global query fallback
-                    Intent gi = new Intent(Intent.ActionMain);
-                    gi.AddCategory(Intent.CategoryLauncher);
-                    var list = pm.QueryIntentActivities(gi, 0);
-                    if (list != null)
+            var normName = Normalize(name);
+
+            // Try known packages using flexible matching (handles spaces, punctuation, slight variants)
+            try
+            {
+                foreach (var kv in KnownPackages)
+                {
+                    var keyNorm = Normalize(kv.Key);
+                    if (keyNorm == normName || keyNorm.Contains(normName) || normName.Contains(keyNorm))
                     {
-                        foreach (var ri in list)
+                        var known = kv.Value;
+                        VerboseToast(ctx, $"Known alias mapping: '{name}' -> '{known}'");
+                        Intent launch = null;
+                        try { launch = pm.GetLaunchIntentForPackage(known); } catch { launch = null; }
+                        if (launch != null)
                         {
-                            var ai = ri.ActivityInfo;
-                            if (ai != null && string.Equals(ai.PackageName, known, StringComparison.OrdinalIgnoreCase))
+                            VerboseToast(ctx, $"GetLaunchIntentForPackage returned launch intent for '{known}'");
+                            launch.SetFlags(ActivityFlags.NewTask);
+                            ctx.StartActivity(launch);
+                            return new ActionExecutionResult { Success = true };
+                        }
+
+                        // If GetLaunchIntentForPackage failed, attempt to inspect package activities and launch a main activity directly
+                        try
+                        {
+                            var pkgInfo = pm.GetPackageInfo(known, PackageInfoFlags.Activities | PackageInfoFlags.MetaData);
+                            if (pkgInfo?.Activities != null && pkgInfo.Activities.Count > 0)
                             {
-                                Intent e = new Intent(Intent.ActionMain);
-                                e.AddCategory(Intent.CategoryLauncher);
-                                e.SetComponent(new ComponentName(ai.PackageName, ai.Name));
-                                e.SetFlags(ActivityFlags.NewTask);
-                                ctx.StartActivity(e);
-                                return new ActionExecutionResult { Success = true };
+                                foreach (var act in pkgInfo.Activities)
+                                {
+                                    if (act == null) continue;
+                                    // Prefer activities that look like launchers (contain "Main" or "Launcher"), otherwise pick the first
+                                    if (act.Name != null && (act.Name.IndexOf("main", StringComparison.OrdinalIgnoreCase) >= 0 || act.Name.IndexOf("launch", StringComparison.OrdinalIgnoreCase) >= 0))
+                                    {
+                                        try
+                                        {
+                                            VerboseToast(ctx, $"Attempting direct activity launch '{act.Name}' for package '{known}'");
+                                            Intent comp = new Intent(Intent.ActionMain);
+                                            comp.AddCategory(Intent.CategoryLauncher);
+                                            comp.SetComponent(new ComponentName(known, act.Name));
+                                            comp.SetFlags(ActivityFlags.NewTask);
+                                            ctx.StartActivity(comp);
+                                            return new ActionExecutionResult { Success = true };
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            VerboseToast(ctx, $"Direct activity launch failed: {ex.Message}");
+                                        }
+                                    }
+                                }
+
+                                // As a last resort with this package, try the first declared activity
+                                var first = pkgInfo.Activities[0];
+                                if (first != null)
+                                {
+                                    try
+                                    {
+                                        VerboseToast(ctx, $"Attempting fallback activity launch '{first.Name}' for package '{known}'");
+                                        Intent comp2 = new Intent(Intent.ActionMain);
+                                        comp2.AddCategory(Intent.CategoryLauncher);
+                                        comp2.SetComponent(new ComponentName(known, first.Name));
+                                        comp2.SetFlags(ActivityFlags.NewTask);
+                                        ctx.StartActivity(comp2);
+                                        return new ActionExecutionResult { Success = true };
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        VerboseToast(ctx, $"Fallback activity launch failed: {ex.Message}");
+                                    }
+                                }
+                            }
+                        }
+                        catch (Java.Lang.Throwable jex)
+                        {
+                            // Package not found or unable to read activities
+                            VerboseToast(ctx, $"GetPackageInfo failed for '{known}': {jex.Message}");
+                        }
+                        // fallback: search launcher activities for the known package
+                        Intent gi = new Intent(Intent.ActionMain);
+                        gi.AddCategory(Intent.CategoryLauncher);
+                        var list = pm.QueryIntentActivities(gi, 0);
+                        if (list != null)
+                        {
+                            VerboseToast(ctx, $"QueryIntentActivities resolved {list.Count} handlers for package '{known}'");
+                            foreach (var ri in list)
+                            {
+                                var ai = ri.ActivityInfo;
+                                if (ai != null && string.Equals(ai.PackageName, known, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    VerboseToast(ctx, $"Found launcher activity '{ai.Name}' for package '{known}'");
+                                    Intent e = new Intent(Intent.ActionMain);
+                                    e.AddCategory(Intent.CategoryLauncher);
+                                    e.SetComponent(new ComponentName(ai.PackageName, ai.Name));
+                                    e.SetFlags(ActivityFlags.NewTask);
+                                    ctx.StartActivity(e);
+                                    return new ActionExecutionResult { Success = true };
+                                }
                             }
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    VerboseToast(ctx, "Known-package launch attempt failed: " + ex.Message);
-                }
+            }
+            catch (Exception ex)
+            {
+                VerboseToast(ctx, "Known-package launch attempt failed: " + ex.Message);
             }
 
-            // fuzzy search installed apps
+            // fuzzy search installed apps: match against label and package name using normalized tokens
             try
             {
                 var apps = pm.GetInstalledApplications(PackageInfoFlags.MetaData);
@@ -150,10 +229,22 @@ namespace TimeCheck.Platforms.Android
                 {
                     foreach (var pkg in apps)
                     {
-                        var lblObj = pm.GetApplicationLabel(pkg);
-                        string label = lblObj != null ? lblObj.ToString() : string.Empty;
-                        if (string.IsNullOrEmpty(label)) continue;
-                        if (label.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf(label, StringComparison.OrdinalIgnoreCase) >= 0)
+                        string label = string.Empty;
+                        try { var lblObj = pm.GetApplicationLabel(pkg); label = lblObj != null ? lblObj.ToString() : string.Empty; } catch { }
+                        var normLabel = Normalize(label);
+                        var normPackage = Normalize(pkg.PackageName ?? string.Empty);
+                        if (!string.IsNullOrEmpty(normLabel) && (normLabel.Contains(normName) || normName.Contains(normLabel)))
+                        {
+                            Intent li = pm.GetLaunchIntentForPackage(pkg.PackageName);
+                            if (li != null)
+                            {
+                                li.SetFlags(ActivityFlags.NewTask);
+                                ctx.StartActivity(li);
+                                return new ActionExecutionResult { Success = true };
+                            }
+                        }
+                        // also match against package names (e.g., youtube -> comgoogleandroidyoutube)
+                        if (!string.IsNullOrEmpty(normPackage) && (normPackage.Contains(normName) || normName.Contains(normPackage)))
                         {
                             Intent li = pm.GetLaunchIntentForPackage(pkg.PackageName);
                             if (li != null)
