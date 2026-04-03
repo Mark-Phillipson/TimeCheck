@@ -71,16 +71,14 @@ namespace TimeCheck.Services
         {
             try
             {
-                // If the file was packaged with the app (copied to the output), prefer that first
-                var packagedPath = Path.Combine(AppContext.BaseDirectory ?? string.Empty, FileName);
-                if (File.Exists(packagedPath))
+                var packagedJson = TryReadPackagedJson();
+                if (!string.IsNullOrWhiteSpace(packagedJson))
                 {
                     try
                     {
-                        var jsonPack = File.ReadAllText(packagedPath);
-                        _cache = JsonSerializer.Deserialize<List<LaunchRecord>>(jsonPack) ?? new List<LaunchRecord>();
+                        _cache = JsonSerializer.Deserialize<List<LaunchRecord>>(packagedJson) ?? new List<LaunchRecord>();
                         EnsureAliases();
-                        try { System.Diagnostics.Debug.WriteLine($"LaunchService: loaded packaged {_cache.Count} entries (packaged)"); } catch { }
+                        try { System.Diagnostics.Debug.WriteLine($"LaunchService: loaded packaged {_cache.Count} entries"); } catch { }
                         return;
                     }
                     catch { /* fall through to other locations */ }
@@ -255,38 +253,37 @@ namespace TimeCheck.Services
             if (string.IsNullOrWhiteSpace(recognisedText))
                 return Task.FromResult<LaunchRecord?>(null);
 
-            var input = Normalize(recognisedText);
-            var tokens = Tokenize(input);
+            var lookupInputs = BuildLookupInputs(recognisedText)
+                .Select(Normalize)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (lookupInputs.Count == 0)
+                return Task.FromResult<LaunchRecord?>(null);
 
             LaunchRecord? best = null;
             double bestScore = 0;
 
-                foreach (var candidate in _cache.Where(c => c.IsLocal))
+            foreach (var candidate in _cache.Where(c => c.IsLocal))
             {
                 var key = Normalize(candidate.VoiceKey ?? candidate.Name ?? string.Empty);
                 var keyTokens = Tokenize(key);
+                var keySoundex = keyTokens.Select(t => GetSoundex(t)).Where(s => !string.IsNullOrEmpty(s)).ToList();
                 var aliases = candidate.Aliases ?? Array.Empty<string>();
 
                 if (!keyTokens.Any())
                     continue;
 
-                // token overlap score
-                var common = tokens.Intersect(keyTokens).Count();
-                var score = (double)common / Math.Max(tokens.Count, keyTokens.Count);
-
-                // if candidate key is contained verbatim in input, boost score
-                if (!string.IsNullOrEmpty(key) && input.Contains(key, StringComparison.OrdinalIgnoreCase))
-                    score = Math.Max(score, 0.95);
+                var score = lookupInputs.Max(input => ScoreNormalizedPhrase(input, key, keyTokens, keySoundex));
 
                 // check aliases for verbatim containment or token overlap
                 foreach (var alias in aliases)
                 {
                     var aNorm = Normalize(alias);
                     var aTokens = Tokenize(aNorm);
-                    var commonA = tokens.Intersect(aTokens).Count();
-                    var aScore = (double)commonA / Math.Max(tokens.Count, aTokens.Count);
-                    if (!string.IsNullOrEmpty(aNorm) && input.Contains(aNorm, StringComparison.OrdinalIgnoreCase))
-                        aScore = Math.Max(aScore, 0.98);
+                    var aSoundex = aTokens.Select(t => GetSoundex(t)).Where(s => !string.IsNullOrEmpty(s)).ToList();
+                    var aScore = lookupInputs.Max(input => ScoreNormalizedPhrase(input, aNorm, aTokens, aSoundex, 0.98));
                     if (aScore > score)
                         score = aScore;
                 }
@@ -301,13 +298,14 @@ namespace TimeCheck.Services
             // threshold: require reasonably high overlap (60%)
             if (best != null && bestScore >= 0.6)
                 return Task.FromResult<LaunchRecord?>(best);
+
             // Fallback: try Levenshtein similarity on full phrase and aliases
             LaunchRecord? fallback = null;
             double fallbackScore = 0;
             foreach (var candidate in _cache.Where(c => c.IsLocal))
             {
                 var key = Normalize(candidate.VoiceKey ?? candidate.Name ?? string.Empty);
-                var sim = Similarity(input, key);
+                var sim = lookupInputs.Max(input => Similarity(input, key));
                 if (sim > fallbackScore)
                 {
                     fallbackScore = sim;
@@ -317,7 +315,8 @@ namespace TimeCheck.Services
                 foreach (var alias in candidate.Aliases ?? Array.Empty<string>())
                 {
                     var aNorm = Normalize(alias);
-                    var simA = Similarity(input, aNorm);
+                    var aSound = Tokenize(aNorm).Select(t => GetSoundex(t)).Where(s => !string.IsNullOrEmpty(s)).ToList();
+                    var simA = lookupInputs.Max(input => BlendSimilarityWithPhonetics(input, aNorm, aSound));
                     if (simA > fallbackScore)
                     {
                         fallbackScore = simA;
@@ -380,6 +379,119 @@ namespace TimeCheck.Services
         {
             if (string.IsNullOrWhiteSpace(s)) return new List<string>();
             return s.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        }
+
+        private static IEnumerable<string> BuildLookupInputs(string recognisedText)
+        {
+            var raw = CommandPhraseParser.NormalizeWhitespace(recognisedText);
+            if (!string.IsNullOrWhiteSpace(raw))
+                yield return raw;
+
+            var extracted = CommandPhraseParser.ExtractLookupText(recognisedText);
+            if (!string.IsNullOrWhiteSpace(extracted) && !string.Equals(raw, extracted, StringComparison.OrdinalIgnoreCase))
+                yield return extracted;
+        }
+
+        private static double ScoreNormalizedPhrase(string input, string candidateText, List<string> candidateTokens, List<string> candidateSoundex, double containmentBoost = 0.95)
+        {
+            var tokens = Tokenize(input);
+            var inputSoundex = tokens.Select(GetSoundex).Where(s => !string.IsNullOrEmpty(s)).ToList();
+
+            var common = tokens.Intersect(candidateTokens).Count();
+            var tokenScore = tokens.Count == 0 || candidateTokens.Count == 0 ? 0.0 : (double)common / Math.Max(tokens.Count, candidateTokens.Count);
+
+            var phoneticScore = 0.0;
+            if (inputSoundex.Count > 0 && candidateSoundex.Count > 0)
+            {
+                var commonPhonetic = inputSoundex.Intersect(candidateSoundex).Count();
+                phoneticScore = (double)commonPhonetic / Math.Max(inputSoundex.Count, candidateSoundex.Count);
+            }
+
+            var score = 0.6 * tokenScore + 0.4 * phoneticScore;
+            if (!string.IsNullOrEmpty(candidateText) && input.Contains(candidateText, StringComparison.OrdinalIgnoreCase))
+                score = Math.Max(score, containmentBoost);
+
+            return score;
+        }
+
+        private static double BlendSimilarityWithPhonetics(string input, string candidateText, List<string> candidateSoundex)
+        {
+            var similarity = Similarity(input, candidateText);
+            var tokens = Tokenize(input);
+            var inputSoundex = tokens.Select(GetSoundex).Where(s => !string.IsNullOrEmpty(s)).ToList();
+            if (inputSoundex.Count == 0 || candidateSoundex.Count == 0)
+                return similarity;
+
+            var commonPh = inputSoundex.Intersect(candidateSoundex).Count();
+            var phoneticSim = (double)commonPh / Math.Max(inputSoundex.Count, candidateSoundex.Count);
+            return Math.Max(similarity, 0.5 * phoneticSim + 0.5 * similarity);
+        }
+
+        private static string? TryReadPackagedJson()
+        {
+            try
+            {
+                var packagedPath = Path.Combine(AppContext.BaseDirectory ?? string.Empty, FileName);
+                if (File.Exists(packagedPath))
+                    return File.ReadAllText(packagedPath);
+            }
+            catch { }
+
+            try
+            {
+                var fileSystemType = Type.GetType("Microsoft.Maui.Storage.FileSystem, Microsoft.Maui.Essentials");
+                var currentProperty = fileSystemType?.GetProperty("Current");
+                var current = currentProperty?.GetValue(null);
+                var openMethod = fileSystemType?.GetMethod("OpenAppPackageFileAsync", new[] { typeof(string) });
+                var task = openMethod?.Invoke(current, new object[] { FileName }) as Task<Stream>;
+                if (task == null)
+                    return null;
+
+                using var stream = task.GetAwaiter().GetResult();
+                using var reader = new StreamReader(stream);
+                return reader.ReadToEnd();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // Basic Soundex implementation for English-like phonetic matching
+        private static string GetSoundex(string term)
+        {
+            if (string.IsNullOrWhiteSpace(term)) return string.Empty;
+            term = term.ToUpperInvariant();
+            var first = term[0];
+            var map = new Dictionary<char, char>
+            {
+                {'B','1'},{'F','1'},{'P','1'},{'V','1'},
+                {'C','2'},{'G','2'},{'J','2'},{'K','2'},{'Q','2'},{'S','2'},{'X','2'},{'Z','2'},
+                {'D','3'},{'T','3'},
+                {'L','4'},
+                {'M','5'},{'N','5'},
+                {'R','6'}
+            };
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append(first);
+            char? lastCode = null;
+            for (int i = 1; i < term.Length && sb.Length < 4; i++)
+            {
+                var ch = term[i];
+                if (!map.TryGetValue(ch, out var code))
+                {
+                    lastCode = null; // vowels and other chars reset
+                    continue;
+                }
+                if (lastCode == code) continue;
+                sb.Append(code);
+                lastCode = code;
+            }
+
+            // pad with 0s
+            while (sb.Length < 4) sb.Append('0');
+            return sb.ToString();
         }
     }
 }

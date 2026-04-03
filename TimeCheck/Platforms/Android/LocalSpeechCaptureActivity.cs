@@ -77,16 +77,21 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
 
         var text = recognisedText.Trim();
         var lower = text.ToLowerInvariant();
+        var lookupText = CommandPhraseParser.ExtractLookupText(text);
 
         DeviceAction? action = null;
 
-        // FIRST: allow local launches configured in the LaunchService to override generic handling
-        if (launchService != null)
+        // Decide intent by verb: 'open' -> prefer app on device (with Play Store fallback), other verbs -> web/search
+        var isOpenVerb = CommandPhraseParser.IsOpenVerb(text);
+        var isExplicitUrlOpen = CommandPhraseParser.IsExplicitUrlOpen(text);
+
+        // If not an explicit 'open url' and NOT the 'open' verb, allow local launch matches to return web URLs
+        if (!isOpenVerb && launchService != null)
         {
             try
             {
-                var match = await launchService.FindBestMatchAsync(recognisedText);
-                if (match != null)
+                var match = await launchService.FindBestMatchAsync(lookupText);
+                if (match != null && !string.IsNullOrWhiteSpace(match.Url))
                 {
                     global::Android.Util.Log.Debug("TimeCheck", $"Local launch matched: {match.Name} ({match.VoiceKey})");
                     ShowToast($"Opening {match.Name}...");
@@ -103,7 +108,7 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
         if (action == null)
         {
             // Open URL (explicit)
-            if (lower.StartsWith("open http") || lower.StartsWith("open https") || lower.StartsWith("go to ") || lower.StartsWith("open www."))
+            if (isExplicitUrlOpen)
             {
                 var url = text;
                 if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -111,11 +116,46 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
 
                 action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = url } };
             }
-            // Open app
-            else if (lower.StartsWith("open ") || lower.StartsWith("launch ") || lower.StartsWith("start "))
+            // 'open' verb: prefer to open an app on device; if it fails, open Google Play search for the app name
+            else if (isOpenVerb)
             {
-                var name = text.Substring(text.IndexOf(' ') + 1).Trim();
-                action = new DeviceAction { Type = "device.open_app", Params = new Dictionary<string, string> { ["name"] = name } };
+                var name = lookupText;
+
+                // Try to open the app immediately; if that fails, fallback to Play Store search
+                try
+                {
+                    var tryAction = new DeviceAction { Type = "device.open_app", Params = new Dictionary<string, string> { ["name"] = name } };
+                    var tryResult = await executor.ExecuteAsync(tryAction);
+                    if (tryResult != null && tryResult.Success)
+                    {
+                        ShowToast($"Opened {name}...");
+                        return;
+                    }
+                    else
+                    {
+                        // fallback to Google Play
+                        var playSearch = $"https://play.google.com/store/search?q={System.Uri.EscapeDataString(name)}&c=apps";
+                        action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = playSearch } };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    global::Android.Util.Log.Debug("TimeCheck", $"Open-app attempt failed: {ex.Message}");
+                    var playSearch = $"https://play.google.com/store/search?q={System.Uri.EscapeDataString(name)}&c=apps";
+                    action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = playSearch } };
+                }
+            }
+            // Other verbs like 'launch', 'start', 'browse', 'search' -> treat as web/open browser search
+            else if (CommandPhraseParser.IsSearchIntentVerb(text))
+            {
+                var keyword = lookupText;
+
+                // If a local launch matched earlier and provided a URL, prefer it; otherwise open browser search
+                if (action == null)
+                {
+                    var searchUrl = $"https://www.google.com/search?q={System.Uri.EscapeDataString(keyword)}";
+                    action = new DeviceAction { Type = "device.open_url", Params = new Dictionary<string, string> { ["url"] = searchUrl } };
+                }
             }
             
             // Media controls
