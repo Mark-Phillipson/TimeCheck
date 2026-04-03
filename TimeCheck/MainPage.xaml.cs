@@ -460,26 +460,17 @@ namespace TimeCheck
             await DisplayAlert("Settings", "Companion settings saved.", "OK");
         }
 
-        private async void SendTestCommand_Clicked(object sender, EventArgs e)
+        private void SendTestCommand_Clicked(object sender, EventArgs e)
         {
-            try
-            {
-                var request = new CommandRequest
-                {
-                    Command = "open youtube",
-                    DeviceToken = _settingsService.DeviceToken,
-                    DeviceName = _settingsService.DeviceName
-                };
-
-                var result = await _assistantApiClient.SendCommandAsync(request);
-                AssistantStatusLabel.Text = $"Assistant response: {result.TextResponse}";
-                await DisplayAlert("Assistant Response", result.TextResponse, "OK");
-            }
-            catch (System.Exception ex)
-            {
-                AssistantStatusLabel.Text = $"Send failed: {ex.Message}";
-                await DisplayAlert("Error", ex.Message, "OK");
-            }
+#if ANDROID
+            var intent = new Android.Content.Intent(
+                Platform.CurrentActivity,
+                typeof(TimeCheck.Platforms.Android.LocalSpeechCaptureActivity));
+            Platform.CurrentActivity?.StartActivity(intent);
+            AssistantStatusLabel.Text = "Local speech capture launched.";
+#else
+            AssistantStatusLabel.Text = "Local speech capture is only available on Android.";
+#endif
         }
 
         private void SpeakCompanionCommand_Clicked(object sender, EventArgs e)
@@ -568,6 +559,13 @@ namespace TimeCheck
             var isVisible = !CompanionSettingsBody.IsVisible;
             CompanionSettingsBody.IsVisible = isVisible;
             ToggleSettingsButton.Text = isVisible ? "▲ Hide" : "▼ Show";
+        }
+
+        private void ToggleDeviceToken_Clicked(object sender, EventArgs e)
+        {
+            // Toggle the masking state for the device token entry and update button text
+            DeviceTokenEntry.IsPassword = !DeviceTokenEntry.IsPassword;
+            ToggleDeviceTokenButton.Text = DeviceTokenEntry.IsPassword ? "Show" : "Hide";
         }
 
         private void MinimizeAppButton_Clicked(object sender, EventArgs e)

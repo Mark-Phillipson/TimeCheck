@@ -1,0 +1,6 @@
+--------- beginning of main
+04-03 10:15:20.652 D/TimeCheck(18300): OpenApp: looking for 'YouTube'
+04-03 10:15:20.665 D/TimeCheck(18300): Known alias mapping: 'YouTube' -> 'com.google.android.youtube'
+04-03 10:15:20.681 D/TimeCheck(18300): GetLaunchIntentForPackage returned null for 'com.google.android.youtube' — trying MAIN/LAUNCHER query
+04-03 10:15:20.694 D/TimeCheck(18300): QueryIntentActivities resolved 0 handlers for package 'com.google.android.youtube'
+04-03 10:15:22.127 D/TimeCheck(18300): No installed app found; opening Play Store for 'YouTube'
