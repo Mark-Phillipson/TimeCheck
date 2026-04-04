@@ -17,4 +17,10 @@ public sealed class AccessibilityCommandProxy : IAccessibilityCommandService
     public Task<bool> PerformScrollAsync(string direction) =>
         CompanionAccessibilityService.Instance?.PerformScrollAsync(direction)
         ?? Task.FromResult(false);
+
+    public bool CanDetectVoiceAccess => CompanionAccessibilityService.Instance != null ? true : false;
+
+    public Task<bool> IsVoiceAccessEnabledAsync() =>
+        CompanionAccessibilityService.Instance?.IsVoiceAccessEnabledAsync()
+        ?? Task.FromResult(false);
 }

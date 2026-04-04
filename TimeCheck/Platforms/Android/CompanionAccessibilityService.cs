@@ -43,6 +43,27 @@ public class CompanionAccessibilityService : AccessibilityService
             _instance = null;
     }
 
+    /// <summary>
+    /// Whether this service implementation can attempt to detect other accessibility services
+    /// such as Google Voice Access. This returns true when the service is connected.
+    /// </summary>
+    public bool CanDetectVoiceAccess() => _instance != null;
+
+    /// <summary>
+    /// Heuristic, best-effort detection whether Google Voice Access appears enabled on the device.
+    /// </summary>
+    public Task<bool> IsVoiceAccessEnabledAsync()
+    {
+        try
+        {
+            return Task.FromResult(AccessibilityStateMonitor.IsVoiceAccessEnabled(this));
+        }
+        catch
+        {
+            return Task.FromResult(false);
+        }
+    }
+
     public Task<bool> PerformNavigationAsync(string action)
     {
         GlobalAction? globalAction = action.ToLowerInvariant() switch

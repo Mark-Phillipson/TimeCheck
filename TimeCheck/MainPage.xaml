@@ -144,6 +144,14 @@
                 </Grid>
                 <Entry x:Name="DeviceNameEntry" Placeholder="Device Name (optional)" />
                 <Button Text="Save Companion Settings" Clicked="SaveCompanionSettings_Clicked" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Label Text="Reduce system listening interference" Grid.Column="0" VerticalOptions="Center" />
+                    <Switch x:Name="InterferenceReductionSwitch" Grid.Column="1" Toggled="InterferenceReductionSwitch_Toggled" />
+                </Grid>
                 <Button x:Name="SyncLaunchesButton" Text="Sync Launches (from Companion)" Clicked="SyncLaunchesButton_Clicked" />
                 <Button x:Name="SendTestCommandButton" Text="Speak Local Command" Clicked="SendTestCommand_Clicked" IsEnabled="False" />
                 <Button x:Name="SpeakCompanionButton" Text="Speak Companion Command" Clicked="SpeakCompanionCommand_Clicked" IsEnabled="False" />

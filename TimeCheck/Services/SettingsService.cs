@@ -8,11 +8,13 @@ public class SettingsService : ISettingsService
     const string DeviceTokenKey = "DeviceToken";
     const string DeviceNameKey = "DeviceName";
     const string IsQuietKey = "IsQuiet";
+    const string UseInterferenceReductionKey = "UseInterferenceReduction";
 
     public string AssistantBaseUrl { get; set; } = string.Empty;
     public string DeviceToken { get; set; } = string.Empty;
     public string DeviceName { get; set; } = string.Empty;
     public bool IsQuiet { get; set; } = false;
+    public bool UseInterferenceReduction { get; set; } = true;
 
     public void Load()
     {
@@ -20,6 +22,7 @@ public class SettingsService : ISettingsService
         DeviceToken = Preferences.Get(DeviceTokenKey, string.Empty);
         DeviceName = Preferences.Get(DeviceNameKey, string.Empty);
         IsQuiet = Preferences.Get(IsQuietKey, false);
+        UseInterferenceReduction = Preferences.Get(UseInterferenceReductionKey, true);
     }
 
     public void Save()
@@ -28,5 +31,6 @@ public class SettingsService : ISettingsService
         Preferences.Set(DeviceTokenKey, DeviceToken);
         Preferences.Set(DeviceNameKey, DeviceName);
         Preferences.Set(IsQuietKey, IsQuiet);
+        Preferences.Set(UseInterferenceReductionKey, UseInterferenceReduction);
     }
 }

@@ -6,6 +6,7 @@ public interface ISettingsService
     string DeviceToken { get; set; }
     string DeviceName { get; set; }
     bool IsQuiet { get; set; }
+    bool UseInterferenceReduction { get; set; }
 
     void Load();
     void Save();

@@ -8,6 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using Android.Util;
+using TimeCheck.Platforms.Android;
 
 namespace TimeCheck.Platforms.Android;
 
@@ -19,10 +21,20 @@ namespace TimeCheck.Platforms.Android;
 public class LocalSpeechCaptureActivity : global::Android.App.Activity
 {
     private const int SpeechRequestCode = 74;
+    private VoiceAccessSuppressionHelper? _suppression;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        try
+        {
+            _suppression = new VoiceAccessSuppressionHelper(this);
+        }
+        catch (Exception ex)
+        {
+            Log.Debug("TimeCheck", $"Suppression helper init failed: {ex.Message}");
+            _suppression = null;
+        }
         StartSpeechRecognition();
     }
 
@@ -35,10 +47,17 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
 
         try
         {
+            var services = IPlatformApplication.Current?.Services;
+            var settings = services?.GetService<TimeCheck.Services.ISettingsService>();
+            try { settings?.Load(); } catch { }
+            if (settings == null || settings.UseInterferenceReduction)
+                _suppression?.RequestAudioFocus();
+
             StartActivityForResult(intent, SpeechRequestCode);
         }
         catch (ActivityNotFoundException)
         {
+            _suppression?.ReleaseAudioFocus();
             ShowToast("Speech recognition not available on this device.");
             Finish();
         }
@@ -56,6 +75,12 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
         }
 
         Finish();
+
+        try
+        {
+            _suppression?.ReleaseAudioFocus();
+        }
+        catch { }
 
         if (!string.IsNullOrWhiteSpace(spokenText))
             _ = ExecuteLocallyAsync(spokenText);

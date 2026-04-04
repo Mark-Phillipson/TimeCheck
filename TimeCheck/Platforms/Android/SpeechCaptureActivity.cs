@@ -4,6 +4,12 @@ using Android.OS;
 using Android.Speech;
 using TimeCheck.Models;
 using TimeCheck.Services;
+using Android.Content.Res;
+using Android.Runtime;
+using Android.Util;
+
+// Audio focus helper
+using TimeCheck.Platforms.Android;
 
 namespace TimeCheck.Platforms.Android;
 
@@ -15,10 +21,20 @@ namespace TimeCheck.Platforms.Android;
 public class SpeechCaptureActivity : global::Android.App.Activity
 {
     private const int SpeechRequestCode = 73;
+    private VoiceAccessSuppressionHelper? _suppression;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        try
+        {
+            _suppression = new VoiceAccessSuppressionHelper(this);
+        }
+        catch (System.Exception ex)
+        {
+            Log.Debug("TimeCheck", $"Suppression helper init failed: {ex.Message}");
+            _suppression = null;
+        }
         StartSpeechRecognition();
     }
 
@@ -31,10 +47,18 @@ public class SpeechCaptureActivity : global::Android.App.Activity
 
         try
         {
+            // Only request audio focus if the user has enabled interference reduction in settings
+            var services = IPlatformApplication.Current?.Services;
+            var settings = services?.GetService<TimeCheck.Services.ISettingsService>();
+            try { settings?.Load(); } catch { }
+            if (settings == null || settings.UseInterferenceReduction)
+                _suppression?.RequestAudioFocus();
+
             StartActivityForResult(intent, SpeechRequestCode);
         }
         catch (ActivityNotFoundException)
         {
+            _suppression?.ReleaseAudioFocus();
             ShowToast("Speech recognition not available on this device.");
             Finish();
         }
@@ -53,6 +77,13 @@ public class SpeechCaptureActivity : global::Android.App.Activity
 
         // Dismiss the transparent activity immediately so the app remains responsive
         Finish();
+
+        // Always release audio focus when we're finished
+        try
+        {
+            _suppression?.ReleaseAudioFocus();
+        }
+        catch { }
 
         if (!string.IsNullOrWhiteSpace(spokenText))
             _ = SendCommandAsync(spokenText);

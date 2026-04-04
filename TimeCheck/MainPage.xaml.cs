@@ -194,6 +194,13 @@ namespace TimeCheck
                 // QuietModeSwitch may not be available on some platforms - ignore
             }
 
+            // Initialize interference reduction toggle
+            try
+            {
+                InterferenceReductionSwitch.IsToggled = _settingsService.UseInterferenceReduction;
+            }
+            catch { }
+
             // Auto-start the companion service if settings are configured
             if (!_companionServiceRunning
                 && !string.IsNullOrWhiteSpace(_settingsService.AssistantBaseUrl)
@@ -207,6 +214,22 @@ namespace TimeCheck
                     ? "Companion service running."
                     : "Enter URL and token, then save to auto-start service.";
             }
+
+#if ANDROID
+            try
+            {
+                var activity = Platform.CurrentActivity;
+                if (activity != null)
+                {
+                    bool va = TimeCheck.Platforms.Android.AccessibilityStateMonitor.IsVoiceAccessEnabled(activity);
+                    if (va)
+                    {
+                        AssistantStatusLabel.Text += "\nNote: Google Voice Access appears enabled — this can conflict with in-app voice capture. For best results, consider pausing Voice Access while using TimeCheck speech.";
+                    }
+                }
+            }
+            catch { }
+#endif
 
 #if ANDROID
             if (_tts == null)
@@ -645,6 +668,15 @@ namespace TimeCheck
                     ScheduleNextEncouragement();
                 }
             }
+        }
+
+        private void InterferenceReductionSwitch_Toggled(object sender, ToggledEventArgs e)
+        {
+            _settingsService.UseInterferenceReduction = e.Value;
+            _settingsService.Save();
+            HelpLabel.Text = e.Value
+                ? "App will request microphone focus during voice capture to reduce interference."
+                : "App will not attempt to alter audio focus during voice capture.";
         }
 
         private void MinimizeAppButton_Clicked(object sender, EventArgs e)
