@@ -110,8 +110,10 @@ public class LocalSpeechCaptureActivity : global::Android.App.Activity
         var isOpenVerb = CommandPhraseParser.IsOpenVerb(text);
         var isExplicitUrlOpen = CommandPhraseParser.IsExplicitUrlOpen(text);
 
-        // If not an explicit 'open url' and NOT the 'open' verb, allow local launch matches to return web URLs
-        if (!isOpenVerb && launchService != null)
+        // Prefer local launch mappings for any non-explicit URL command, including 'open'.
+        // This lets custom entries (for example installed PWAs represented by URL launches)
+        // win before generic open-app/Play Store fallback logic.
+        if (!isExplicitUrlOpen && launchService != null)
         {
             try
             {

@@ -19,6 +19,7 @@ public sealed class WindowsMainPage : ContentPage
     private readonly Button _cyclingModeButton;
     private readonly Button _speakButton;
     private readonly Random _random = new();
+    private bool _encouragementTimerScheduled;
     private readonly List<string> _encouragements = new()
     {
         "Keep pushing. The hill only wins if you stop.",
@@ -66,6 +67,7 @@ public sealed class WindowsMainPage : ContentPage
         _timeModeButton.Clicked += (_, _) =>
         {
             _currentMode = Mode.TimeCheck;
+            _encouragementTimerScheduled = false;
             UpdateModeDisplay();
             _helpLabel.Text = "Mode switched to Time Check.";
         };
@@ -79,6 +81,7 @@ public sealed class WindowsMainPage : ContentPage
             _currentMode = Mode.Cycling;
             UpdateModeDisplay();
             _helpLabel.Text = "Mode switched to Cycling Encouragement.";
+            ScheduleNextEncouragement();
         };
 
         _speakButton = new Button
@@ -158,7 +161,10 @@ public sealed class WindowsMainPage : ContentPage
             return true;
         });
 
-        ScheduleNextEncouragement();
+        if (_currentMode == Mode.Cycling)
+        {
+            ScheduleNextEncouragement();
+        }
     }
 
     private void UpdateModeDisplay()
@@ -186,6 +192,19 @@ public sealed class WindowsMainPage : ContentPage
 
     private void ScheduleNextEncouragement()
     {
+        if (_currentMode != Mode.Cycling)
+        {
+            _encouragementTimerScheduled = false;
+            return;
+        }
+
+        if (_encouragementTimerScheduled)
+        {
+            return;
+        }
+
+        _encouragementTimerScheduled = true;
+
         var delay = TimeSpan.FromMinutes(_random.NextDouble() * 9 + 1);
         Dispatcher.StartTimer(delay, () =>
         {
@@ -194,7 +213,13 @@ public sealed class WindowsMainPage : ContentPage
                 SayEncouragement();
             }
 
-            ScheduleNextEncouragement();
+            _encouragementTimerScheduled = false;
+
+            if (_currentMode == Mode.Cycling)
+            {
+                ScheduleNextEncouragement();
+            }
+
             return false;
         });
     }

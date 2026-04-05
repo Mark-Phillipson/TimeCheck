@@ -29,7 +29,7 @@ namespace TimeCheck
 
         private readonly List<string> _cyclingEncouragements = new List<string>
         {
-            "Move it, you splendid sod — pedal like the sergeant's watching!",
+            "Move it, you lazy sod — pedal like the sergeant's watching!",
             "Put some bleeding effort into it, you horrible little man!",
             "Eyes front, legs turning — show those tarmac traitors who's boss!",
             "Pick up the pace, you dawdling peacock!",
@@ -39,17 +39,22 @@ namespace TimeCheck
             "Come on, you glorious wreck, churn those gears!",
             "Legs like pistons, soldier — get them firing!",
             "If the sergeant heard that wheeze he'd have you doing laps!",
-            "Stop admiring the scenery and start punishing the road!",
-            "Waste not a breath moaning — burn it into forward motion!",
-            "Bend metal with your thighs, you magnificent nuisance!",
-            "Don't be a biscuit — pedal like someone stole your tea!",
+            "Stop admiring the scenery and start punishing the road  You plank!",
+            "Waste not a breath moaning — burn it into forward fricking motion!",
+            "Bend metal with your thighs, you maggot!",
+            "Don't be a biscuit — pedal like someone stole your wallet!",
             "One more push and you'll be less pathetic and more presentable!",
-            "Keep it moving, you daft mariner of the road!",
+            "Put some bleeding effort into it",
+            "Keep it moving, you daft prat!",
             "Slog through it — the hill's just showing off, not you!",
-            "Don't be a limp noodle; be a proper bit of kit!",
+            "Come on no pain no gain",
+            "Don't be a limp BISCUIT; be a proper bit of kit!",
+            "Come on do a proper job you little plonker!",
             "Pedal like you put a bet on your finish time!",
             "No dawdling — the road doesn't care about your excuses!",
             "Sound off with your legs, not your complaints!",
+            "Put some effort in it at the back",
+            "The last one to the caffe pays the bill",
             "Give it the beans, you marvelous underachiever!",
             "Quit moaning and let your wheels do the talking!",
             "Harden up and pedal, — charm is strictly optional!",
@@ -57,7 +62,7 @@ namespace TimeCheck
             "Sweat like a saint and pedal like a sinner caught stealing!",
             "Pull yourself together and show that hill no mercy!",
             "Legs on fire? Good — that's improvement cooking!",
-            "Mind over gearbox — think hard, pedal harder!",
+            "Mind over MATTER — think hard, pedal harder!",
             "You're nearly there, you stubborn bit of brilliance!",
             "Keep going — this isn't supposed to be easy, darling!",
             "Hustle up, you caffeine-fuelled battalion of one!",
@@ -119,15 +124,25 @@ namespace TimeCheck
             "Finish this climb and call it a character-building exercise!",
             "Legs, meet challenge. Challenge, meet relentless persistence!",
             "When your legs scream, that's just applause from the future you!",
-            "Storm that summit like it's a particularly loud drum!",
             "Be ridiculous, be brave, be sweaty — and keep pedalling!",
             "You've got the kit and the cheek — now use both!",
             "Make this climb regret ever daring to stand in your way!",
-            "Now pedal, you glorious incompetent — make it count!"
+            "Now pedal, you glorious incompetent — make it count!",
+            "Keep the chain singing and the sweat flowing — you're in charge of this ride.",
+            "This road doesn't know what hit it. Show it some proper cycling !",
+            "Look out your back wheel is following your front one",
+            "Come on there's only seven more hills",
+            "Pretend there's a lion chasing you",
+            "Spin those wheels like you're chasing the last bus home.",
+            "Be the kind of rider who turns every hill into a punchline.",
+            "Always tell your MUMMY before you go off somewhere — especially if it's up a hill!",
+            "Ride like your bike has a personality — loud, stubborn, and full of grit.",
+            "If you're on an electric bike press boost now otherwise PEDAL"
         };
 
         
         private readonly Random _random = new Random();
+        private bool _encouragementTimerScheduled;
         private readonly double _encMinMinutes = 1.0; // minimum random interval in minutes
         private readonly double _encMaxMinutes = 10.0; // maximum random interval in minutes
 
@@ -282,9 +297,8 @@ namespace TimeCheck
                 return true; // Repeat every 5 minutes
             });
 
-            // Encouragement Mode: schedule encouragements at random intervals
-            // Only schedule encouragements if not in Quiet mode
-            if (!_settingsService.IsQuiet)
+            // Encouragement Mode: only schedule encouragements when in cycling mode
+            if (!_settingsService.IsQuiet && _currentMode == Mode.Cycling)
             {
                 ScheduleNextEncouragement();
             }
@@ -292,15 +306,27 @@ namespace TimeCheck
 
         private void ScheduleNextEncouragement()
         {
-            // Don't schedule when Quiet mode is enabled
-            if (_settingsService.IsQuiet)
+            // Don't schedule when Quiet mode is enabled or if we're not in cycling mode
+            if (_settingsService.IsQuiet || _currentMode != Mode.Cycling)
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    HelpLabel.Text = "Quiet mode enabled — automatic encouragements paused.";
+                    if (_settingsService.IsQuiet)
+                    {
+                        HelpLabel.Text = "Quiet mode enabled — automatic encouragements paused.";
+                    }
                 });
+                _encouragementTimerScheduled = false;
                 return;
             }
+
+            if (_encouragementTimerScheduled)
+            {
+                return;
+            }
+
+            _encouragementTimerScheduled = true;
+
             // Pick a random delay between min and max minutes (fractional allowed)
             double minutes = _random.NextDouble() * (_encMaxMinutes - _encMinMinutes) + _encMinMinutes;
             var delay = TimeSpan.FromMinutes(minutes);
@@ -317,11 +343,15 @@ namespace TimeCheck
                 {
                     SayEncouragement();
                 }
-                // Schedule the following encouragement (recursive scheduling) if not quiet
-                if (!_settingsService.IsQuiet)
+
+                _encouragementTimerScheduled = false;
+
+                // Only continue the chain while still in cycling mode
+                if (_currentMode == Mode.Cycling && !_settingsService.IsQuiet)
                 {
                     ScheduleNextEncouragement();
                 }
+
                 return false; // don't repeat this timer — we've rescheduled
             });
         }
@@ -475,6 +505,7 @@ namespace TimeCheck
         private void TimeCheckModeButton_Clicked(object sender, EventArgs e)
         {
             _currentMode = Mode.TimeCheck;
+            _encouragementTimerScheduled = false;
             UpdateModeDisplay();
             HelpLabel.Text = "Mode switched to Time Check - announces time every 5 minutes (3 times).";
         }
@@ -484,6 +515,7 @@ namespace TimeCheck
             _currentMode = Mode.Cycling;
             UpdateModeDisplay();
             HelpLabel.Text = "Mode switched to Cycling Encouragement - motivational messages at random intervals.";
+            ScheduleNextEncouragement();
         }
 
         private void UpdateModeDisplay()
