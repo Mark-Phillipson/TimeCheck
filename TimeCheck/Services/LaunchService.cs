@@ -8,6 +8,7 @@ using System.Timers;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Microsoft.Maui.Storage;
 
 namespace TimeCheck.Services
 {
@@ -439,15 +440,7 @@ namespace TimeCheck.Services
 
             try
             {
-                var fileSystemType = Type.GetType("Microsoft.Maui.Storage.FileSystem, Microsoft.Maui.Essentials");
-                var currentProperty = fileSystemType?.GetProperty("Current");
-                var current = currentProperty?.GetValue(null);
-                var openMethod = fileSystemType?.GetMethod("OpenAppPackageFileAsync", new[] { typeof(string) });
-                var task = openMethod?.Invoke(current, new object[] { FileName }) as Task<Stream>;
-                if (task == null)
-                    return null;
-
-                using var stream = task.GetAwaiter().GetResult();
+                using var stream = FileSystem.Current.OpenAppPackageFileAsync(FileName).GetAwaiter().GetResult();
                 using var reader = new StreamReader(stream);
                 return reader.ReadToEnd();
             }

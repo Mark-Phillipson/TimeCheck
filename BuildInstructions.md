@@ -96,6 +96,55 @@ Notes:
 - The launcher activity is the generated Android name `crc64a0fd38e9f8dc419b.MainActivity`, not `com.companyname.timecheck.MainActivity`.
 - If `adb devices` shows more than one device, keep using `-s R3CW40BQS0M` consistently (USB Debugging, authorized device).
 
+## Debugging Voice Commands on Phone (Breakpoints)
+
+Use this flow when you need to debug phrase matching (for example, "blazer site" vs "Blazor Site").
+
+Prerequisites:
+- Developer options + USB debugging enabled on the phone
+- Device is authorized (`adb devices` shows it as `device`)
+- App built in `Debug` configuration
+
+1. Open [TimeCheck/Platforms/Android/LocalSpeechCaptureActivity.cs](TimeCheck/Platforms/Android/LocalSpeechCaptureActivity.cs).
+2. Set breakpoints in `ExecuteLocallyAsync` at these points:
+   - immediately after `var text = recognisedText.Trim();`
+   - inside the candidate loop used for launch lookup
+   - just before the branch that executes when a launch match is found
+
+3. Attach a debugger while running on the physical phone:
+
+   Visual Studio:
+   - Set startup project to `TimeCheck`
+   - Select target framework `net10.0-android`
+   - Select the connected Android device
+   - Press `F5` (or Debug > Start Debugging)
+
+   VS Code:
+   - Start Android debug from `Run and Debug` using the MAUI/Android launch profile
+   - Confirm the selected target is the connected device (not an emulator if you want phone-only behavior)
+
+4. Trigger voice capture on the phone and say your test phrase.
+5. When a breakpoint hits, inspect these values in the debug locals/watch windows:
+   - `recognisedText`
+   - `text`
+   - `lookupText`
+   - current candidate value used for lookup
+   - `match`
+6. Step through until you confirm one of these outcomes:
+   - successful launch match -> URL/app action generated
+   - no match -> fallback branch (browser search or Play Store) is taken
+
+Helpful log commands during phone debugging:
+
+```powershell
+adb -s R3CW40BQS0M logcat -c
+adb -s R3CW40BQS0M logcat TimeCheck:D ActivityTaskManager:I *:S
+```
+
+Troubleshooting breakpoints:
+- Hollow/unbound breakpoint: clean + rebuild `Debug`, redeploy, then start debugging again.
+- Breakpoint never hit: verify the currently installed app matches the project build output and that the debugger is attached to the running app process.
+
 ## Note
 
 - Make sure you have the .NET MAUI workload installed
