@@ -1,0 +1,138 @@
+@page "/timecheck"
+@using TimeCheck.Web.Services
+@inject ISettingsService SettingsService
+@inject ITtsService TtsService
+@inject ITimeCheckService TimeCheckService
+@inject IEncouragementService EncouragementService
+@implements IAsyncDisposable
+
+<div class="container mt-3">
+    <h3>TimeCheck</h3>
+
+    <div class="mb-3">
+        <h1>@_currentTime</h1>
+        <button class="btn btn-primary me-2" @onclick="AnnounceTime">Announce Time Now</button>
+        <button class="btn btn-secondary" @onclick="SpeakEncouragement">Say Encouragement Now</button>
+    </div>
+
+    <div class="mb-3 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="quietSwitch" @bind="SettingsService.IsQuiet" />
+        <label class="form-check-label" for="quietSwitch">Quiet mode (pause automatic announcements)</label>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Settings</div>
+        <div class="card-body">
+            <div class="mb-2">
+                <label>Time check interval (minutes)</label>
+                <input type="number" class="form-control" min="1" @bind="SettingsService.TimeCheckIntervalMinutes" />
+            </div>
+            <div class="mb-2">
+                <label>Encouragement min interval (minutes)</label>
+                <input type="number" class="form-control" min="1" @bind="SettingsService.EncouragementIntervalMin" />
+            </div>
+            <div class="mb-2">
+                <label>Encouragement max interval (minutes)</label>
+                <input type="number" class="form-control" min="1" @bind="SettingsService.EncouragementIntervalMax" />
+            </div>
+            <div class="mb-2 form-check">
+                <input class="form-check-input" type="checkbox" @bind="SettingsService.EncouragementEnabled" />
+                <label class="form-check-label">Enable Encouragement</label>
+            </div>
+
+            <div class="mb-2">
+                <label>Encouragement messages</label>
+                @for (int i = 0; i < SettingsService.EncouragementMessages.Count; i++)
+                {
+                    <div class="input-group mb-1">
+                        <input class="form-control" @bind="SettingsService.EncouragementMessages[i]" />
+                        <button class="btn btn-outline-danger" @onclick="(() => RemoveMessage(i))">Remove</button>
+                    </div>
+                }
+                <button class="btn btn-outline-primary" @onclick="AddMessage">Add Message</button>
+            </div>
+
+            <div class="mt-2">
+                <button class="btn btn-success me-2" @onclick="SaveSettings">Save Settings</button>
+                <button class="btn btn-warning" @onclick="RequestNotificationPermission">Enable Notifications</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _currentTime = DateTime.Now.ToString("h:mm tt");
+    private System.Timers.Timer? _clockTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SettingsService.LoadAsync();
+        // Start services
+        await TimeCheckService.StartAsync();
+        await EncouragementService.StartAsync();
+
+        // Start UI clock update
+        _clockTimer = new System.Timers.Timer(1000);
+        _clockTimer.Elapsed += (s, e) =>
+        {
+            _currentTime = DateTime.Now.ToString("h:mm tt");
+            InvokeAsync(StateHasChanged);
+        };
+        _clockTimer.Start();
+    }
+
+    private async Task AnnounceTime()
+    {
+        await TimeCheckService.SayTimeNowAsync();
+    }
+
+    private async Task SpeakEncouragement()
+    {
+        await EncouragementService.SayEncouragementNowAsync();
+    }
+
+    private async Task SaveSettings()
+    {
+        await SettingsService.SaveAsync();
+    }
+
+    
+
+    private void AddMessage()
+    {
+        SettingsService.EncouragementMessages.Add("New encouragement message");
+    }
+
+    private void RemoveMessage(int index)
+    {
+        if (index >= 0 && index < SettingsService.EncouragementMessages.Count)
+            SettingsService.EncouragementMessages.RemoveAt(index);
+    }
+
+    private async Task RequestNotificationPermission()
+    {
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<string>("timecheck.requestNotificationPermission");
+            if (result == "granted")
+            {
+                await JSRuntime.InvokeVoidAsync("timecheck.showNotification", "TimeCheck", "Notifications enabled.");
+            }
+        }
+        catch { }
+    }
+
+    [Inject]
+    private IJSRuntime JSRuntime { get; set; } = default!;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_clockTimer != null)
+        {
+            _clockTimer.Stop();
+            _clockTimer.Dispose();
+        }
+        await TimeCheckService.StopAsync();
+        await EncouragementService.StopAsync();
+    }
+}

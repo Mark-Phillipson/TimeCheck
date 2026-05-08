@@ -10,6 +10,11 @@ builder.Services.AddRazorComponents()
 
 // Add device-specific services used by the TimeCheck.Shared project
 builder.Services.AddSingleton<IFormFactor, FormFactor>();
+// TimeCheck PWA services
+builder.Services.AddScoped<ITtsService, TtsService>();
+builder.Services.AddScoped<ISettingsService, BrowserSettingsService>();
+builder.Services.AddScoped<ITimeCheckService, TimeCheckService>();
+builder.Services.AddScoped<IEncouragementService, EncouragementService>();
 
 var app = builder.Build();
 
